@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#14120F">
+<meta name="description" content="The Company: a free company of mercenaries in Italy, 1360s. Contract, raid or rest — and live with what your name is worth.">
+<title>The Company</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#14120F; --ground-2:#0F0D0B; --panel:#221E1A; --panel-hi:#2C2620;
+  --line:#3A332B; --line-soft:#2A241F; --text:#E8DFC9; --muted:#A99C86; --dim:#7A6E5C;
+  --iron:#8A9199; --iron-hi:#B7BFC6; --iron-dim:#4A5057;
+  --blood:#9C3A3A; --gold:#C9A227; --gold-hi:#E0BC4C; --steel:#5B6B79; --parchment:#D8C9A3;
+  --shadow:0 10px 30px rgba(0,0,0,.5); --r:10px;
+  --f-disp:"Cinzel","Iowan Old Style",Georgia,serif;
+  --f-ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--text);font-family:var(--f-ui);font-size:16px;
+  line-height:1.45;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;
+  -webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{touch-action:manipulation}
+h1,h2,h3{margin:0;font-family:var(--f-disp);font-weight:700;letter-spacing:.02em}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.pos{color:#6FAE7C}.neg{color:var(--blood)}.warn{color:var(--gold-hi)}
+
+.frame{max-width:600px;margin:0 auto;min-height:100dvh;position:relative;padding-bottom:24px;
+  background:linear-gradient(180deg,#1B1712 0%,var(--ground) 260px);
+  border-left:1px solid var(--line-soft);border-right:1px solid var(--line-soft)}
+@media (max-width:620px){.frame{border:0}}
+
+#hud{position:sticky;top:0;z-index:40;background:rgba(15,13,11,.94);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.hud-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 14px 6px}
+.coname{font-family:var(--f-disp);font-size:18px;line-height:1.15;color:var(--parchment)}
+.coname small{display:block;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--dim);margin-top:3px;font-weight:600}
+.date{text-align:right;font-size:12px;color:var(--muted);letter-spacing:.04em;flex:none}
+.date b{display:block;font-family:var(--f-num);font-size:15px;color:var(--text);font-weight:500}
+#menuBtn{flex:none;width:36px;height:36px;margin:-2px -2px -2px 4px;border:1px solid var(--line);
+  border-radius:9px;background:var(--panel);color:var(--muted);font-size:16px;line-height:1;cursor:pointer}
+#menuBtn:active{background:var(--panel-hi)}
+
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:2px 14px 12px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.chip .k{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.chip .v{display:block;font-family:var(--f-num);font-size:15px;margin-top:2px}
+
+main{padding:4px 14px 90px}
+.sec{margin:16px 0}
+.sec h2{font-size:15px;color:var(--parchment);margin-bottom:8px}
+.lede{font-size:13px;color:var(--muted);margin:2px 0 10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:13.5px;border-bottom:1px solid var(--line-soft)}
+.kv:last-child{border-bottom:0}
+.kv .k{color:var(--muted)}
+
+.repline{display:flex;align-items:center;gap:8px;padding:6px 0}
+.repline .f{flex:1;font-size:13.5px}
+.repline .bar{flex:1.4;height:6px;border-radius:3px;background:var(--line-soft);position:relative;overflow:hidden}
+.repline .bar i{position:absolute;top:0;bottom:0;background:var(--steel)}
+.repline .n{width:38px;text-align:right;font-family:var(--f-num);font-size:12.5px}
+
+.offer{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 12px;margin-bottom:9px;cursor:pointer;color:inherit}
+.offer:active{background:var(--panel-hi)}
+.offer .t{font-size:14.5px;font-weight:600;color:var(--parchment)}
+.offer .s{display:block;font-size:12.5px;color:var(--muted);margin-top:3px}
+.offer .pay{float:right;font-family:var(--f-num);color:var(--gold-hi);font-size:14px}
+
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.btn{flex:1;min-width:120px;padding:11px 14px;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--panel-hi);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;text-align:center}
+.btn:active{filter:brightness(.9)}
+.btn.primary{background:var(--blood);border-color:#B24949;color:#fff}
+.btn.ghost{background:transparent}
+.btn.gold{background:var(--gold);border-color:var(--gold-hi);color:#241C05}
+.btn.sm{flex:none;padding:8px 12px;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
+
+.journal{display:flex;flex-direction:column-reverse;gap:0}
+.jrow{padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:13px}
+.jrow:last-child{border-bottom:0}
+.jrow .w{color:var(--dim);font-size:11px;display:block;margin-bottom:2px;letter-spacing:.03em}
+.jrow.good{color:var(--text)}.jrow.bad{color:#D3A0A0}.jrow.gold{color:var(--gold-hi)}
+
+.scrim{position:fixed;inset:0;background:rgba(10,8,6,.72);z-index:80;display:flex;align-items:flex-end;justify-content:center}
+@media (min-width:640px){.scrim{align-items:center}}
+.sheet{width:100%;max-width:560px;max-height:88dvh;overflow:auto;background:var(--ground-2);
+  border:1px solid var(--line);border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+@media (min-width:640px){.sheet{border-radius:16px}}
+.sheet h3{font-size:16px;margin-bottom:10px;color:var(--parchment)}
+.slotrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.slotrow:last-child{border-bottom:0}
+.slotrow .info{font-size:12.5px;color:var(--muted)}
+textarea.blob{width:100%;min-height:90px;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  color:var(--text);font-family:var(--f-num);font-size:11px;padding:8px;resize:vertical}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel-hi);
+  border:1px solid var(--line);border-radius:999px;padding:9px 18px;font-size:13px;z-index:90;
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+
+.title-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:28px 20px;text-align:center}
+.title-wrap h1{font-size:40px;color:var(--parchment)}
+.title-wrap .sub{color:var(--muted);font-size:14px;margin:10px 0 30px}
+.title-wrap .btn{margin-bottom:10px}
+.build{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;
+  text-align:left;cursor:pointer;color:inherit}
+.build.sel{border-color:var(--gold);background:var(--panel-hi)}
+.build .t{font-weight:700;color:var(--parchment)}
+.build .s{font-size:12.5px;color:var(--muted);display:block;margin-top:3px}
+input.name{width:100%;padding:11px 13px;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--panel);color:var(--text);font-size:15px;margin-bottom:14px}
+
+.over{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:30px 20px;text-align:center}
+.over h1{font-size:28px;margin-bottom:12px}
+.over p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:22px}
+</style>
+</head>
+<body>
+<div class="frame" id="app"></div>
+<div id="toastHost"></div>
+<script>
+/* =================================================================
+   THE COMPANY
+   A free company of mercenaries, Italy, 1360s. Single file, no
+   build step, no server, no API key — same shape as Silk Road,
+   for the same reasons (see SilkRoad/docs/building-games.md).
+
+   The tuning constants below are ported from the validated
+   kill-gate prototype (prototypes/the_company_sim.py) — not
+   re-derived. If a number here needs to change, change it there
+   first and rerun the simulation before changing it here.
+   ================================================================= */
+
+/* ---------------------------------------------------------- config - */
+const CONFIG = {
+  seasonsPerYear: 4,
+  startYear: 1361,
+  totalSeasons: 40,             // 10 years — matches the validated kill-gate horizon.
+                                 // Do not extend this without rerunning
+                                 // prototypes/the_company_sim.py at the new
+                                 // horizon first: a longer game compounds
+                                 // small per-season risks and changes the
+                                 // win/mutiny/coalition balance materially
+                                 // (confirmed — 160 seasons pushed win rate
+                                 // from ~1% to ~23% for always_contract).
+  winTreasury: 11000,
+  winReputation: 60,
+  winEligibleFromSeason: 20,
+  maxLancesMult: 1.5,
+  recruitCostPerLance: 13,
+  recruitRateCap: 20,
+  recruitTreasuryBuffer: 800,
+  dreadDecay: 0.95,
+  repDecay: 0.98,
+  mutinyTreasuryStrikes: 2,
+  mutinyLoyaltyCeilingForStrikes: 30,
+  /* storage keys — chosen now, treated as permanent. Renaming these
+     later orphans every save already on a player's device. */
+  saveKey: "the-company-v1",
+  slotKey: "the-company-slot-v1-"
+};
+
+const SEASONS = ["Spring","Summer","Autumn","Winter"];
+const WINTER_IDX = 3;
+const seasonOf = t => SEASONS[t % CONFIG.seasonsPerYear];
+const yearOf = t => CONFIG.startYear + Math.floor(t / CONFIG.seasonsPerYear);
+
+const FACTIONS = [
+  {id:"florence", name:"Florence"},
+  {id:"milan", name:"Milan"},
+  {id:"papal", name:"the Papal States"},
+  {id:"pisa", name:"Pisa"},
+  {id:"padua", name:"Padua"}
+];
+
+const BUILDS = [
+  {id:"balanced", name:"A balanced company", lances:200, quality:0.50, treasury:2000,
+   blurb:"Even numbers, even pay. No particular edge, no particular weakness."},
+  {id:"heavy", name:"Uomini d'arme — heavy lances", lances:170, quality:0.60, treasury:1800,
+   blurb:"Fewer men, better trained, dearer to keep. Wins more of the fights it takes."},
+  {id:"free", name:"Free riders — light and many", lances:230, quality:0.40, treasury:2200,
+   blurb:"Numerous and cheap to replace. Loses more fights, but a bad season costs less to fix."}
+];
+
+function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+function rand(lo, hi){ return lo + Math.random() * (hi - lo); }
+function choice(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+function $(sel){ return document.querySelector(sel); }
+
+/* --------------------------------------------------------- state - */
+let S = null;
+let build = null;     // in-progress company creation pick
+let sheetFn = null;   // currently open sheet renderer, or null
+
+function newGame(captainName, b){
+  S = {
+    v: 1,
+    captainName: captainName,
+    companyName: "The Company of " + captainName,
+    build: b.id,
+    turn: 0,
+    difficulty: "normal",
+    treasury: b.treasury,
+    lances: b.lances,
+    startLances: b.lances,
+    quality: b.quality,
+    loyalty: 70,
+    dread: 0,
+    honor: 50,
+    reputation: Object.fromEntries(FACTIONS.map(f => [f.id, 0])),
+    offers: [],
+    negTreasuryStrikes: 0,
+    ledger: [],
+    journal: [],
+    stat: {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0},
+    over: null,
+    flags: {}
+  };
+  rollOffers();
+  post("gold", "Turn ledger opened, " + yearOf(0) + ". " + S.companyName + " takes the road, " +
+    fmt(S.lances) + " lances strong.");
+  save();
+}
+
+/* ------------------------------------------------------ persistence - */
+function save(){ try{ localStorage.setItem(CONFIG.saveKey, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(CONFIG.saveKey);
+    if(!raw) return false;
+    const o = JSON.parse(raw);
+    if(o && o.v === 1){ S = repair(o); return true; }
+  }catch(e){}
+  return false;
+}
+function wipe(){ try{ localStorage.removeItem(CONFIG.saveKey); }catch(e){} }
+function repair(o){
+  // Forward-compatible defaults for any field a future schema bump adds.
+  if(!o.stat) o.stat = {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0};
+  if(!o.flags) o.flags = {};
+  if(o.negTreasuryStrikes === undefined) o.negTreasuryStrikes = 0;
+  return o;
+}
+const slotKey = i => CONFIG.slotKey + i;
+function slotRead(i){
+  try{ const raw = localStorage.getItem(slotKey(i)); if(!raw) return null;
+    const o = JSON.parse(raw); return (o && o.v === 1) ? o : null; }catch(e){ return null; }
+}
+function slotWrite(i){
+  try{ localStorage.setItem(slotKey(i), JSON.stringify(S)); return true; }catch(e){ return false; }
+}
+function stateCard(o){
+  return { name:o.captainName, when: seasonOf(o.turn) + " " + yearOf(o.turn),
+    worth: Math.round(o.treasury), lances: Math.round(o.lances) };
+}
+function exportText(){
+  const o = JSON.parse(JSON.stringify(S));
+  o.ledger = (o.ledger || []).slice(-60);
+  o.journal = (o.journal || []).slice(0, 40);
+  try{ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }catch(e){ return ""; }
+}
+function importText(txt){
+  try{
+    const o = JSON.parse(decodeURIComponent(escape(atob(txt.replace(/\s+/g,"")))));
+    if(!o || o.v !== 1 || typeof o.treasury !== "number") return null;
+    return repair(o);
+  }catch(e){ return null; }
+}
+
+/* -------------------------------------------------------- ledger/journal - */
+function coin(amount, item){
+  amount = Math.round(amount);
+  if(amount === 0) return 0;
+  S.treasury += amount;
+  S.ledger.push({turn:S.turn, item, dare: amount<0?-amount:0, avere: amount>0?amount:0, bal: Math.round(S.treasury)});
+  if(S.ledger.length > 400) S.ledger.splice(0, S.ledger.length - 400);
+  return amount;
+}
+function post(kind, text){
+  S.journal.unshift({turn:S.turn, kind, text});
+  if(S.journal.length > 140) S.journal.length = 140;
+}
+
+/* -------------------------------------------------------------- engine -
+   Ported directly from prototypes/the_company_sim.py, formula for
+   formula, after that script's kill-gate run passed. See that file's
+   header for what was tuned and why. */
+
+function upkeepPerLance(){ return 3.0 + 4.0 * S.quality; }
+
+function rollOffers(){
+  S.offers = [];
+  FACTIONS.forEach(f => {
+    if(Math.random() < 0.55) return; // not every faction is hiring every season
+    const rep = S.reputation[f.id];
+    const baseRate = rand(6.0, 10.0);
+    let payPerLance = baseRate * (1 + rep/200) * (1 + S.dread/300);
+    payPerLance = Math.max(payPerLance, 1.0);
+    const risk = rand(0.03, 0.09);
+    S.offers.push({faction:f.id, payPerLance, risk});
+  });
+}
+
+function resolveContract(offer){
+  const f = FACTIONS.find(x => x.id === offer.faction);
+  const pay = offer.payPerLance * S.lances;
+  const winChance = 0.4 + 0.4 * S.quality;
+  let heavyLoss = false, income;
+  if(Math.random() < winChance){
+    const plunder = pay * rand(0.2, 0.6);
+    const casualties = offer.risk * S.lances * rand(0.3, 0.8);
+    S.reputation[f.id] = clamp(S.reputation[f.id] + rand(5,12), -100, 100);
+    FACTIONS.forEach(o => { if(o.id !== f.id) S.reputation[o.id] -= rand(0,3); });
+    S.honor = clamp(S.honor + 2, 0, 100);
+    S.lances = Math.max(0, S.lances - casualties);
+    income = pay + plunder;
+    coin(income, "condotta — " + f.name + " (won the field)");
+    post("good", "Held the field for " + f.name + ". " + fmt(pay) + " in pay, " + fmt(plunder) + " in plunder, " + fmt(casualties) + " lances lost.");
+    S.stat.wonBattles++;
+  } else {
+    const casualties = offer.risk * S.lances * rand(1.0, 2.2);
+    S.reputation[f.id] -= rand(3,8);
+    S.lances = Math.max(0, S.lances - casualties);
+    income = pay * 0.5;
+    heavyLoss = casualties > 0.10 * S.lances;
+    coin(income, "condotta — " + f.name + " (bad campaign)");
+    post("bad", "A bad campaign under " + f.name + "'s pay. " + fmt(casualties) + " lances lost, half wage only.");
+    S.stat.lostBattles++;
+  }
+  S.stat.contracts++;
+  return {heavyLoss, gotPlunder: income > pay};
+}
+
+function resolveRaid(){
+  const others = FACTIONS.filter(f => f.id !== "__none__");
+  const target = choice(others);
+  const take = rand(500, 1400) * (1 + S.lances/400);
+  coin(take, "composizione — " + target.name);
+  S.dread = clamp(S.dread + rand(10,18), 0, 100);
+  S.honor = clamp(S.honor - rand(6,14), 0, 100);
+  S.reputation[target.id] = clamp(S.reputation[target.id] - rand(40,70), -100, 100);
+  FACTIONS.forEach(f => { if(f.id !== target.id) S.reputation[f.id] -= rand(2,6); });
+  post("gold", "Rode to " + target.name + "'s walls and rode away " + fmt(take) + " richer for not burning them.");
+  let heavyLoss = false;
+  if(Math.random() < 0.15){
+    const casualties = rand(0.02, 0.06) * S.lances;
+    S.lances = Math.max(0, S.lances - casualties);
+    post("bad", "The town's militia put up more fight than expected — " + fmt(casualties) + " lances lost.");
+  }
+  S.stat.raids++;
+  return {heavyLoss, gotPlunder:true};
+}
+
+function resolveRest(){
+  S.loyalty = clamp(S.loyalty + 8, 0, 100);
+  S.dread = clamp(S.dread - 3, 0, 100);
+  const income = rand(20, 80);
+  coin(income, "winter quarters — small garrison fee");
+  post("", "Wintered in place. The men rest; the ledger barely moves.");
+  return {heavyLoss:false, gotPlunder:false};
+}
+
+function payWages(){
+  const bill = S.lances * upkeepPerLance();
+  coin(-bill, "wages, " + fmt(S.lances) + " lances");
+  if(S.treasury >= 0){ S.negTreasuryStrikes = 0; return true; }
+  S.negTreasuryStrikes++;
+  return false;
+}
+
+function updateLoyalty(paid, heavyLoss, gotPlunder){
+  if(paid && gotPlunder) S.loyalty = clamp(S.loyalty + 5, 0, 100);
+  else if(paid) S.loyalty = clamp(S.loyalty + 1, 0, 100);
+  else { S.loyalty = clamp(S.loyalty - 15, 0, 100);
+    post("bad", "Wages fell short. The corporals are talking among themselves."); }
+  if(heavyLoss && !gotPlunder) S.loyalty = clamp(S.loyalty - 5, 0, 100);
+}
+
+function recruit(){
+  const maxLances = S.startLances * CONFIG.maxLancesMult;
+  if(S.lances >= maxLances) return;
+  const spare = S.treasury - CONFIG.recruitTreasuryBuffer;
+  if(spare <= 0) return;
+  const affordable = spare / CONFIG.recruitCostPerLance;
+  const room = maxLances - S.lances;
+  const recruited = Math.max(0, Math.min(CONFIG.recruitRateCap, affordable, room));
+  if(recruited < 1) return;
+  S.lances += recruited;
+  coin(-recruited * CONFIG.recruitCostPerLance, "recruitment, " + fmt(recruited) + " lances");
+}
+
+function checkCoalition(){
+  const threat = Math.max(0, (S.dread-50)/50) * Math.max(0, (40-S.honor)/40);
+  if(threat <= 0) return false;
+  const chance = 0.03 + 0.20 * threat;
+  if(Math.random() < chance){
+    const survive = Math.min(0.6, S.lances/600 + S.quality*0.2);
+    if(Math.random() > survive) return true;
+    S.lances *= rand(0.5, 0.75);
+    S.dread = clamp(S.dread - 20, 0, 100);
+    post("bad", "A league of your enemies came for you and you barely held. The company is smaller for it.");
+  }
+  return false;
+}
+
+function checkWin(){
+  if(S.turn < CONFIG.winEligibleFromSeason) return false;
+  if(S.treasury < CONFIG.winTreasury) return false;
+  return FACTIONS.some(f => S.reputation[f.id] >= CONFIG.winReputation);
+}
+
+function runSeason(action, offerIdx){
+  const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
+  let result;
+  if(action === "contract" && S.offers[offerIdx]){
+    result = resolveContract(S.offers[offerIdx]);
+  } else if(action === "raid" && !isWinter){
+    result = resolveRaid();
+  } else {
+    result = resolveRest();
+  }
+
+  FACTIONS.forEach(f => { S.reputation[f.id] *= CONFIG.repDecay; });
+  S.dread *= CONFIG.dreadDecay;
+
+  const paid = payWages();
+  updateLoyalty(paid, result.heavyLoss, result.gotPlunder);
+  recruit();
+
+  S.stat.seasons++;
+  S.turn++;
+
+  if(S.loyalty <= 0){
+    S.over = {result:"mutiny", text:"The corporals put it to a vote in the night. By morning the company is three companies, and none of them is yours."};
+  } else if(S.negTreasuryStrikes >= CONFIG.mutinyTreasuryStrikes && S.loyalty < CONFIG.mutinyLoyaltyCeilingForStrikes){
+    S.over = {result:"mutiny", text:"Two seasons unpaid, and trust already thin. The company does not survive a third."};
+  } else if(checkCoalition()){
+    S.over = {result:"coalition", text:"Every town you ever rode past for tribute has finally agreed on one thing. What is left of the company does not leave the field."};
+  } else if(checkWin()){
+    const trusted = FACTIONS.find(f => S.reputation[f.id] >= CONFIG.winReputation);
+    S.over = {result:"won", text:trusted.name + " has offered you what no free company keeps forever: a permanent commission, a house, and a name that doesn't have to be feared to be paid. You take it."};
+  } else if(S.turn >= CONFIG.totalSeasons){
+    S.over = {result:"retired", text:"You have outlasted most captains who ever rode this road. Old age takes you before the coalition or the creditors do — a quieter ending than most, and not a small one."};
+  }
+
+  if(!S.over) rollOffers(); else S.offers = [];
+  save();
+  render();
+}
+
+/* --------------------------------------------------------------- view - */
+function chipsHTML(){
+  const rows = [
+    ["Treasury", fmt(S.treasury) + " fl.", S.treasury < 0],
+    ["Lances", fmt(S.lances), S.lances < S.startLances*0.3],
+    ["Loyalty", fmt(S.loyalty), S.loyalty < 25],
+    ["Dread", fmt(S.dread), false],
+    ["Honor", fmt(S.honor), false],
+    ["Quality", (S.quality*100).toFixed(0)+"%", false]
+  ];
+  return rows.map(([k,v,warn]) => '<div class="chip"><span class="k">'+k+'</span><span class="v'+(warn?' neg':'')+'">'+v+'</span></div>').join("");
+}
+function repLineHTML(){
+  return '<div class="panel">' + FACTIONS.map(f => {
+    const v = S.reputation[f.id];
+    const pct = clamp((v+100)/2, 0, 100);
+    return '<div class="repline"><span class="f">'+f.name+'</span>' +
+      '<span class="bar"><i style="left:'+(v<0?pct:50)+'%;width:'+Math.abs(pct-50)+'%;background:'+(v<0?'var(--blood)':'var(--gold)')+'"></i></span>' +
+      '<span class="n '+(v<0?'neg':v>20?'pos':'')+'">'+Math.round(v)+'</span></div>';
+  }).join("") + '</div>';
+}
+function offersHTML(){
+  if(!S.offers.length) return '<p class="lede">No one is hiring this season.</p>';
+  return S.offers.map((o,i) => {
+    const f = FACTIONS.find(x => x.id === o.faction);
+    const pay = Math.round(o.payPerLance * S.lances);
+    return '<button class="offer" data-a="contract" data-v="'+i+'">' +
+      '<span class="pay">'+fmt(pay)+' fl.</span>' +
+      '<span class="t">'+f.name+'</span>' +
+      '<span class="s">A condotta for the season. Risk of the field: '+(o.risk*100).toFixed(0)+'%.</span></button>';
+  }).join("");
+}
+function journalHTML(){
+  if(!S.journal.length) return '<p class="lede">Nothing written yet.</p>';
+  return '<div class="journal">' + S.journal.slice(0,25).map(j =>
+    '<div class="jrow '+j.kind+'"><span class="w">'+seasonOf(j.turn)+' '+yearOf(j.turn)+'</span>'+esc(j.text)+'</div>'
+  ).join("") + '</div>';
+}
+
+function render(){
+  const app = $("#app");
+  if(!S){ app.innerHTML = viewTitle(); return; }
+  if(S.over){ app.innerHTML = viewOver(); return; }
+  const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
+  app.innerHTML =
+    '<div id="hud"><div class="hud-top">' +
+      '<div class="coname">'+esc(S.companyName)+'<small>Captain '+esc(S.captainName)+'</small></div>' +
+      '<div class="date"><b>'+seasonOf(S.turn)+'</b>'+yearOf(S.turn)+'</div>' +
+      '<button id="menuBtn" data-a="menu">&#9776;</button>' +
+    '</div><div class="chips">'+chipsHTML()+'</div></div>' +
+    '<main>' +
+      '<section class="sec"><h2>Standing with the powers</h2>'+repLineHTML()+'</section>' +
+      '<section class="sec"><h2>'+(isWinter?"Winter quarters":"This season's offers")+'</h2>' +
+        (isWinter ? '<p class="lede">No campaigning in winter. Rest, and let the ledger breathe.</p>' : offersHTML()) +
+      '</section>' +
+      '<section class="sec"><div class="btnrow">' +
+        (isWinter ? '' : '<button class="btn ghost" data-a="raid">Ride for composizione</button>') +
+        '<button class="btn'+(isWinter?' primary':'')+'" data-a="rest">'+(isWinter?"Winter in place":"Rest this season")+'</button>' +
+      '</div></section>' +
+      '<section class="sec"><h2>The company\'s account</h2><div class="panel"><div class="journal-wrap">'+journalHTML()+'</div></div></section>' +
+    '</main>';
+}
+
+function viewTitle(){
+  if(build){
+    return '<div class="title-wrap">' +
+      '<h1>The Company</h1>' +
+      '<p class="sub">Name your captain and choose how the company is built.</p>' +
+      '<input class="name" id="cname" placeholder="Captain\'s name" maxlength="30" value="'+esc(build.name||"")+'">' +
+      BUILDS.map(b => '<button class="build'+(build.pick===b.id?' sel':'')+'" data-a="pickbuild" data-v="'+b.id+'">' +
+        '<span class="t">'+b.name+'</span><span class="s">'+b.blurb+' &mdash; '+b.lances+' lances, '+fmt(b.treasury)+' fl.</span></button>').join("") +
+      '<div class="btnrow" style="margin-top:12px">' +
+        '<button class="btn ghost" data-a="titleback">Back</button>' +
+        '<button class="btn primary" data-a="startgame">Take the road</button>' +
+      '</div></div>';
+  }
+  const hasSave = !!localStorage.getItem(CONFIG.saveKey);
+  return '<div class="title-wrap">' +
+    '<h1>The Company</h1>' +
+    '<p class="sub">Italy, 1360s. Find work, hold your men together,<br>decide what your name is worth.</p>' +
+    (hasSave ? '<button class="btn primary" data-a="continue">Continue</button>' : '') +
+    '<button class="btn'+(hasSave?' ghost':' primary')+'" data-a="newco">A new company</button>' +
+    '<button class="btn ghost" data-a="slots" data-v="load">Load a saved company</button>' +
+  '</div>';
+}
+
+function viewOver(){
+  const titles = {won:"A commission for life", mutiny:"The company is no more",
+    coalition:"Run to ground", retired:"The road behind you"};
+  const cls = S.over.result === "won" || S.over.result === "retired" ? "" : "neg";
+  return '<div class="over"><h1 class="'+cls+'">'+titles[S.over.result]+'</h1>' +
+    '<p>'+esc(S.over.text)+'</p>' +
+    '<p class="lede">'+fmt(S.stat.seasons)+' seasons on the road. '+fmt(S.stat.contracts)+' contracts, '+
+      fmt(S.stat.raids)+' raids. Ended with '+fmt(S.treasury)+' florins and '+fmt(S.lances)+' lances.</p>' +
+    '<div class="btnrow"><button class="btn primary" data-a="newco">Start a new company</button></div></div>';
+}
+
+/* -------------------------------------------------------------- sheets - */
+function openSheet(fn){ sheetFn = fn; renderSheet(); }
+function closeSheet(){ sheetFn = null; renderSheet(); }
+function renderSheet(){
+  let host = $("#sheetHost");
+  if(!sheetFn){ if(host) host.remove(); return; }
+  const html = '<div class="scrim" data-a="scrim"><div class="sheet">'+sheetFn()+'</div></div>';
+  if(!host){ host = document.createElement("div"); host.id = "sheetHost"; document.body.appendChild(host); }
+  host.innerHTML = html;
+}
+function sheetMenu(){
+  return '<h3>Menu</h3>' +
+    '<div class="btnrow" style="flex-direction:column">' +
+      '<button class="btn ghost" data-a="slots" data-v="save">Save to a slot</button>' +
+      '<button class="btn ghost" data-a="slots" data-v="load">Load from a slot</button>' +
+      '<button class="btn ghost" data-a="export">Copy company as text</button>' +
+      '<button class="btn ghost" data-a="import">Paste a company in</button>' +
+      '<button class="btn ghost" data-a="newco">Abandon and start new</button>' +
+      '<button class="btn" data-a="scrim">Close</button>' +
+    '</div>';
+}
+function sheetSlots(mode){
+  const rows = [1,2,3].map(i => {
+    const o = slotRead(i);
+    const info = o ? stateCard(o) : null;
+    return '<div class="slotrow"><span class="info">Slot '+i+' — '+
+      (info ? info.name+", "+info.when+", "+fmt(info.worth)+" fl." : "empty")+'</span>' +
+      '<button class="btn sm'+(mode==="save"?" primary":"")+'" data-a="slot-'+(mode==="save"?"put":"get")+'" data-v="'+i+'">' +
+      (mode==="save"?"Keep here":"Open") + '</button></div>';
+  }).join("");
+  return '<h3>'+(mode==="save"?"Save to a slot":"Load from a slot")+'</h3>' + rows +
+    '<div class="btnrow" style="margin-top:12px"><button class="btn" data-a="scrim">Close</button></div>';
+}
+function sheetExport(){
+  return '<h3>Copy this company</h3><p class="lede">Paste this somewhere safe. Paste it back in on any device to continue.</p>' +
+    '<textarea class="blob" id="saveblob" readonly>'+exportText()+'</textarea>' +
+    '<div class="btnrow" style="margin-top:10px"><button class="btn primary" data-a="copyblob">Copy</button><button class="btn ghost" data-a="scrim">Close</button></div>';
+}
+function sheetImport(){
+  return '<h3>Paste a company in</h3>' +
+    '<textarea class="blob" id="loadblob" placeholder="Paste the text here"></textarea>' +
+    '<div class="btnrow" style="margin-top:10px"><button class="btn primary" data-a="doimport">Open it</button><button class="btn ghost" data-a="scrim">Close</button></div>';
+}
+
+function toast(text){
+  const host = $("#toastHost");
+  host.innerHTML = '<div class="toast show">'+esc(text)+'</div>';
+  setTimeout(() => { const t = host.querySelector(".toast"); if(t) t.classList.remove("show"); }, 1800);
+}
+
+/* --------------------------------------------------------------- wiring - */
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-a]"); if(!t) return;
+  const a = t.dataset.a, v = t.dataset.v;
+  if(a === "scrim" && (e.target === t || t.tagName === "BUTTON")){ closeSheet(); return; }
+
+  const nameInput = $("#cname");
+  if(nameInput && build) build.name = nameInput.value;
+
+  switch(a){
+    case "newco": S = null; build = {name:"", pick:"balanced"}; render(); break;
+    case "continue": if(load()) render(); else { toast("No company on this device."); render(); } break;
+    case "titleback": build = null; render(); break;
+    case "pickbuild": build.pick = v; render(); break;
+    case "startgame": {
+      const name = (build.name || "").trim() || "the Captain";
+      const b = BUILDS.find(x => x.id === build.pick) || BUILDS[0];
+      newGame(name, b); build = null; render();
+      break; }
+    case "menu": openSheet(sheetMenu); break;
+    case "slots": openSheet(() => sheetSlots(v)); break;
+    case "slot-put":
+      if(slotWrite(+v)){ toast("Kept in slot "+v+"."); closeSheet(); }
+      else toast("Could not save — storage is full.");
+      break;
+    case "slot-get": {
+      const o = slotRead(+v);
+      if(!o){ toast("Nothing kept there."); break; }
+      S = repair(o); save(); closeSheet(); render(); toast("Opened.");
+      break; }
+    case "export": openSheet(sheetExport); break;
+    case "import": openSheet(sheetImport); break;
+    case "copyblob": {
+      const ta = $("#saveblob"); if(!ta) break;
+      ta.select(); ta.setSelectionRange(0, ta.value.length);
+      const done = () => toast("Copied.");
+      if(navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(ta.value).then(done, () => { try{ document.execCommand("copy"); done(); }catch(e){ toast("Copy it by hand — it is selected."); } });
+      else { try{ document.execCommand("copy"); done(); }catch(e){ toast("Copy it by hand — it is selected."); } }
+      break; }
+    case "doimport": {
+      const ta = $("#loadblob");
+      const o = ta ? importText(ta.value) : null;
+      if(!o){ toast("That isn't a company this ledger recognizes."); break; }
+      S = o; save(); closeSheet(); render(); toast("Opened.");
+      break; }
+    case "contract": runSeason("contract", +v); break;
+    case "raid": runSeason("raid"); break;
+    case "rest": runSeason("rest"); break;
+  }
+});
+
+/* ----------------------------------------------------------------- boot - */
+if(!load()) S = null;
+render();
+</script>
+</body>
+</html>
