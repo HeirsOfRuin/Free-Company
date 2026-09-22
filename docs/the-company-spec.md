@@ -85,5 +85,81 @@ being re-litigated.
 
 Trade goods, markets, routes — none of it applies. The nearest sibling
 mechanically is Touchline (roster, morale, contracts, results), which is
-exactly why the kill-gate prototype has to prove this isn't just Touchline
-with pikes before a single line of UI gets written.
+exactly why the kill-gate prototype had to prove this isn't just Touchline
+with pikes before a single line of UI got written. It did.
+
+---
+
+# Built — Stage 1
+
+The spec above is the original design. This section records what the built
+game actually does, where it diverges, and what is measured rather than
+asserted.
+
+## The headline finding changed, and improved
+
+The kill-gate simulation found that committing to one employer beat
+chasing the best rate (14.6% win vs 10.4%). The built game adds faction
+personality — each city has its own pay bias and its own memory for
+loyalty — and that sharpened the finding into something better. Measured
+in the shipped code, 400 runs each on Captain difficulty:
+
+| Strategy | Win | Mutiny |
+|---|---|---|
+| Best rate, no loyalty | 9.3% | 10.3% |
+| **Loyal to Florence** | **11.5%** | 17.5% |
+| Loyal to Padua | 9.8% | 34.0% |
+| Loyal to Milan | 5.0% | 16.5% |
+| Loyal to Pisa | 3.0% | 34.5% |
+
+It is no longer "commit to someone and win more often." It is "commit to
+the *right* someone." Florence pays slightly under the market and
+remembers everything, which makes it the loyalty play. Milan pays best and
+forgets fastest, which makes it the rate-chaser's city and a trap for
+anyone trying to build standing. Pisa cannot afford you, and committing to
+it is ruinous. The faction notes in the game say all of this in prose; the
+numbers agree with the prose.
+
+## Investments are the progression arc
+
+Ablation in the simulation (investments on vs off, all six strategies):
+win rate ~10% with them, ~1% without. They are not decoration, and they
+have not eaten the economy — contract pay remains 73–75% of all florins
+earned, composizione 0–3%. They cost short-term safety, because buying
+eats the wage buffer, which is the intended tension.
+
+## Measured differences
+
+Nothing below is claimed without a number behind it.
+
+- **Difficulty:** Condottiere 24.3% win / 2.7% mutiny · Captain 11.3% /
+  10.7% · Adventurer 4.0% / 27.0%.
+- **Starting builds:** balanced 10.3% win / 10.0% mutiny · heavy 8.0% /
+  10.6% · free riders 10.9% / 6.6%.
+
+## The captain, and the banner
+
+Attributes, arms and finery are deliberately light — they nudge the
+numbers and carry the narration. Every modifier from investments,
+attributes, equipment and difficulty is derived in one function (`mods()`),
+and the figures shown on the Captain screen are that same function's
+output, not a parallel estimate.
+
+The warbanner is a seeded procedural heraldry generator: the preset
+gallery is curated seeds and the randomiser is a reroll over the same
+function, so only a short seed string is persisted and the generator is
+the only asset. Pure identity, no mechanical weight.
+
+A contact sheet of 60+ banners was rendered and looked at before the
+generator was accepted, which cost four charges their place: a lion that
+read as a shrub, an eagle that read as a scribble, a sword that read as
+three vertical bars, and a key that read as a lollipop. It also caught a
+swallowtail that cut a wedge looking like image corruption, and charges
+that vanished into divided fields. None of those were visible in the code.
+
+## Not yet built (Stage 2)
+
+Multi-season campaigns, field battles with a real tactical layer, sieges,
+and the unit composition that replaces the scalar `lances`. Contracts are
+deliberately still one season, because building multi-season contracts
+before the campaign system would be work thrown away.

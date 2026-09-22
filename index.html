@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#14120F">
 <meta name="description" content="The Company: a free company of mercenaries in Italy, 1360s. Contract, raid or rest — and live with what your name is worth.">
 <title>The Company</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -15,6 +17,7 @@
   --line:#3A332B; --line-soft:#2A241F; --text:#E8DFC9; --muted:#A99C86; --dim:#7A6E5C;
   --iron:#8A9199; --iron-hi:#B7BFC6; --iron-dim:#4A5057;
   --blood:#9C3A3A; --gold:#C9A227; --gold-hi:#E0BC4C; --steel:#5B6B79; --parchment:#D8C9A3;
+  --green:#6FAE7C;
   --shadow:0 10px 30px rgba(0,0,0,.5); --r:10px;
   --f-disp:"Cinzel","Iowan Old Style",Georgia,serif;
   --f-ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -29,7 +32,8 @@ button,input,select{font:inherit;color:inherit}
 button{touch-action:manipulation}
 h1,h2,h3{margin:0;font-family:var(--f-disp);font-weight:700;letter-spacing:.02em}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
-.pos{color:#6FAE7C}.neg{color:var(--blood)}.warn{color:var(--gold-hi)}
+.pos{color:var(--green)}.neg{color:var(--blood)}.warn{color:var(--gold-hi)}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges}
 
 .frame{max-width:600px;margin:0 auto;min-height:100dvh;position:relative;padding-bottom:24px;
   background:linear-gradient(180deg,#1B1712 0%,var(--ground) 260px);
@@ -39,42 +43,55 @@ h1,h2,h3{margin:0;font-family:var(--f-disp);font-weight:700;letter-spacing:.02em
 #hud{position:sticky;top:0;z-index:40;background:rgba(15,13,11,.94);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
-.hud-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 14px 6px}
-.coname{font-family:var(--f-disp);font-size:18px;line-height:1.15;color:var(--parchment)}
-.coname small{display:block;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.13em;
-  text-transform:uppercase;color:var(--dim);margin-top:3px;font-weight:600}
-.date{text-align:right;font-size:12px;color:var(--muted);letter-spacing:.04em;flex:none}
-.date b{display:block;font-family:var(--f-num);font-size:15px;color:var(--text);font-weight:500}
-#menuBtn{flex:none;width:36px;height:36px;margin:-2px -2px -2px 4px;border:1px solid var(--line);
+.hud-top{display:flex;align-items:center;gap:10px;padding:9px 14px 6px}
+.hud-banner{flex:none;width:34px;height:44px;border:1px solid var(--line);background:var(--panel)}
+.coname{flex:1;font-family:var(--f-disp);font-size:16px;line-height:1.15;color:var(--parchment);min-width:0}
+.coname small{display:block;font-family:var(--f-ui);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);margin-top:3px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.date{text-align:right;font-size:11.5px;color:var(--muted);letter-spacing:.04em;flex:none}
+.date b{display:block;font-family:var(--f-num);font-size:14px;color:var(--text);font-weight:500}
+#menuBtn{flex:none;width:36px;height:36px;border:1px solid var(--line);
   border-radius:9px;background:var(--panel);color:var(--muted);font-size:16px;line-height:1;cursor:pointer}
 #menuBtn:active{background:var(--panel-hi)}
 
-.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:2px 14px 12px}
-.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
-.chip .k{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.chip .v{display:block;font-family:var(--f-num);font-size:15px;margin-top:2px}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:2px 14px 10px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.chip .k{display:block;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+.chip .v{display:block;font-family:var(--f-num);font-size:14px;margin-top:2px}
 
-main{padding:4px 14px 90px}
+#nav{display:flex;border-top:1px solid var(--line-soft)}
+#nav button{flex:1;background:transparent;border:0;border-top:2px solid transparent;
+  padding:8px 2px 9px;color:var(--dim);font-size:10.5px;font-weight:600;letter-spacing:.04em;cursor:pointer}
+#nav button[aria-current]{color:var(--gold-hi);border-top-color:var(--gold);background:rgba(201,162,39,.06)}
+#nav .badge{display:inline-block;min-width:15px;padding:0 3px;margin-left:3px;border-radius:7px;
+  background:var(--blood);color:#fff;font-size:9px;line-height:15px;font-family:var(--f-num)}
+
+main{padding:4px 14px 40px}
 .sec{margin:16px 0}
-.sec h2{font-size:15px;color:var(--parchment);margin-bottom:8px}
-.lede{font-size:13px;color:var(--muted);margin:2px 0 10px}
+.sec h2{font-size:14.5px;color:var(--parchment);margin-bottom:8px}
+.lede{font-size:12.5px;color:var(--muted);margin:2px 0 10px}
+.empty{font-size:12.5px;color:var(--dim);font-style:italic;padding:10px;border:1px dashed var(--line);
+  border-radius:var(--r);text-align:center}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}
-.kv{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:13.5px;border-bottom:1px solid var(--line-soft)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line-soft)}
 .kv:last-child{border-bottom:0}
 .kv .k{color:var(--muted)}
 
-.repline{display:flex;align-items:center;gap:8px;padding:6px 0}
-.repline .f{flex:1;font-size:13.5px}
-.repline .bar{flex:1.4;height:6px;border-radius:3px;background:var(--line-soft);position:relative;overflow:hidden}
-.repline .bar i{position:absolute;top:0;bottom:0;background:var(--steel)}
-.repline .n{width:38px;text-align:right;font-family:var(--f-num);font-size:12.5px}
+.repline{display:flex;align-items:center;gap:8px;padding:5px 0}
+.repline .f{flex:1.2;font-size:13px}
+.repline .bar{flex:1.3;height:6px;border-radius:3px;background:var(--line-soft);position:relative;overflow:hidden}
+.repline .bar i{position:absolute;top:0;bottom:0}
+.repline .n{width:34px;text-align:right;font-family:var(--f-num);font-size:12px}
+.facnote{font-size:11.5px;color:var(--dim);padding:0 0 8px;border-bottom:1px solid var(--line-soft);margin-bottom:6px}
 
 .offer{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-  padding:11px 12px;margin-bottom:9px;cursor:pointer;color:inherit}
+  padding:11px 12px;margin-bottom:9px;cursor:pointer;color:inherit;display:block}
 .offer:active{background:var(--panel-hi)}
-.offer .t{font-size:14.5px;font-weight:600;color:var(--parchment)}
-.offer .s{display:block;font-size:12.5px;color:var(--muted);margin-top:3px}
+.offer .t{font-size:14px;font-weight:600;color:var(--parchment)}
+.offer .s{display:block;font-size:12px;color:var(--muted);margin-top:3px}
 .offer .pay{float:right;font-family:var(--f-num);color:var(--gold-hi);font-size:14px}
+.offer .undercut{display:block;font-size:11.5px;color:var(--blood);margin-top:4px}
 
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .btn{flex:1;min-width:120px;padding:11px 14px;border-radius:var(--r);border:1px solid var(--line);
@@ -83,47 +100,74 @@ main{padding:4px 14px 90px}
 .btn.primary{background:var(--blood);border-color:#B24949;color:#fff}
 .btn.ghost{background:transparent}
 .btn.gold{background:var(--gold);border-color:var(--gold-hi);color:#241C05}
-.btn.sm{flex:none;padding:8px 12px;font-size:13px}
-.btn:disabled{opacity:.4;cursor:default}
+.btn.sm{flex:none;padding:7px 11px;font-size:12.5px;min-width:0}
+.btn:disabled{opacity:.38;cursor:default}
 
-.journal{display:flex;flex-direction:column-reverse;gap:0}
-.jrow{padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:13px}
+.row{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);padding:10px 11px;margin-bottom:8px;color:inherit;cursor:pointer}
+.row:active{background:var(--panel-hi)}
+.row .main{flex:1;min-width:0}
+.row .t{font-size:13.5px;font-weight:600;color:var(--parchment)}
+.row .s{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.row .end{flex:none;font-family:var(--f-num);font-size:12.5px;text-align:right}
+.row.owned{border-color:var(--gold-dim,#6a5518);background:#241F13}
+.row.flat{cursor:default}
+.rivbanner{flex:none;width:24px;height:31px;border:1px solid var(--line)}
+
+.journal{display:flex;flex-direction:column;gap:0}
+.jrow{padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px}
 .jrow:last-child{border-bottom:0}
-.jrow .w{color:var(--dim);font-size:11px;display:block;margin-bottom:2px;letter-spacing:.03em}
+.jrow .w{color:var(--dim);font-size:10.5px;display:block;margin-bottom:2px;letter-spacing:.03em}
 .jrow.good{color:var(--text)}.jrow.bad{color:#D3A0A0}.jrow.gold{color:var(--gold-hi)}
 
-.scrim{position:fixed;inset:0;background:rgba(10,8,6,.72);z-index:80;display:flex;align-items:flex-end;justify-content:center}
+.attr{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft)}
+.attr:last-child{border-bottom:0}
+.attr .an{flex:1;font-size:13px}
+.attr .an small{display:block;font-size:11px;color:var(--dim)}
+.attr .pips{flex:none;font-family:var(--f-num);font-size:13px;color:var(--gold-hi);letter-spacing:2px}
+
+.scrim{position:fixed;inset:0;background:rgba(10,8,6,.74);z-index:80;display:flex;align-items:flex-end;justify-content:center}
 @media (min-width:640px){.scrim{align-items:center}}
 .sheet{width:100%;max-width:560px;max-height:88dvh;overflow:auto;background:var(--ground-2);
   border:1px solid var(--line);border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
 @media (min-width:640px){.sheet{border-radius:16px}}
-.sheet h3{font-size:16px;margin-bottom:10px;color:var(--parchment)}
+.sheet h3{font-size:16px;margin-bottom:6px;color:var(--parchment)}
+.sheet .lede{margin-bottom:12px}
 .slotrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
 .slotrow:last-child{border-bottom:0}
 .slotrow .info{font-size:12.5px;color:var(--muted)}
 textarea.blob{width:100%;min-height:90px;background:var(--panel);border:1px solid var(--line);border-radius:8px;
   color:var(--text);font-family:var(--f-num);font-size:11px;padding:8px;resize:vertical}
 
+.bannergrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.bannerpick{padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
+.bannerpick.sel{border-color:var(--gold);background:var(--panel-hi)}
+.bannerpick canvas{width:44px;height:56px}
+.bigbanner{display:flex;justify-content:center;margin:6px 0 12px}
+.bigbanner canvas{width:96px;height:124px;border:1px solid var(--line)}
+
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel-hi);
   border:1px solid var(--line);border-radius:999px;padding:9px 18px;font-size:13px;z-index:90;
-  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;max-width:88vw;text-align:center}
 .toast.show{opacity:1}
 
-.title-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:28px 20px;text-align:center}
-.title-wrap h1{font-size:40px;color:var(--parchment)}
-.title-wrap .sub{color:var(--muted);font-size:14px;margin:10px 0 30px}
+.title-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:26px 20px;text-align:center}
+.title-wrap h1{font-size:38px;color:var(--parchment)}
+.title-wrap .sub{color:var(--muted);font-size:13.5px;margin:10px 0 26px}
 .title-wrap .btn{margin-bottom:10px}
-.build{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;
-  text-align:left;cursor:pointer;color:inherit}
+.build{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px;margin-bottom:9px;
+  text-align:left;cursor:pointer;color:inherit;width:100%;display:block}
 .build.sel{border-color:var(--gold);background:var(--panel-hi)}
-.build .t{font-weight:700;color:var(--parchment)}
-.build .s{font-size:12.5px;color:var(--muted);display:block;margin-top:3px}
+.build .t{font-weight:700;color:var(--parchment);font-size:13.5px}
+.build .s{font-size:12px;color:var(--muted);display:block;margin-top:3px}
 input.name{width:100%;padding:11px 13px;border-radius:var(--r);border:1px solid var(--line);
-  background:var(--panel);color:var(--text);font-size:15px;margin-bottom:14px}
+  background:var(--panel);color:var(--text);font-size:15px;margin-bottom:12px}
+.step{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 
 .over{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:30px 20px;text-align:center}
-.over h1{font-size:28px;margin-bottom:12px}
-.over p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:22px}
+.over h1{font-size:26px;margin-bottom:12px}
+.over p{color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:18px}
 </style>
 </head>
 <body>
@@ -131,29 +175,26 @@ input.name{width:100%;padding:11px 13px;border-radius:var(--r);border:1px solid 
 <div id="toastHost"></div>
 <script>
 /* =================================================================
-   THE COMPANY
-   A free company of mercenaries, Italy, 1360s. Single file, no
-   build step, no server, no API key — same shape as Silk Road,
-   for the same reasons (see SilkRoad/docs/building-games.md).
+   THE COMPANY — Italy, 1360s.
+   Single file, no build step, no server, no API key.
 
-   The tuning constants below are ported from the validated
-   kill-gate prototype (prototypes/the_company_sim.py) — not
-   re-derived. If a number here needs to change, change it there
-   first and rerun the simulation before changing it here.
+   Tuning constants are ported from the validated kill-gate
+   simulation in prototypes/the_company_sim.py. If a number here
+   needs to change, change it there first, rerun the sim, and only
+   then change it here.
+
+   All HTML is built with template literals, deliberately: an
+   apostrophe inside a single-quoted string literal blanked this
+   whole page once already.
    ================================================================= */
 
 /* ---------------------------------------------------------- config - */
 const CONFIG = {
   seasonsPerYear: 4,
   startYear: 1361,
-  totalSeasons: 40,             // 10 years — matches the validated kill-gate horizon.
-                                 // Do not extend this without rerunning
-                                 // prototypes/the_company_sim.py at the new
-                                 // horizon first: a longer game compounds
-                                 // small per-season risks and changes the
-                                 // win/mutiny/coalition balance materially
-                                 // (confirmed — 160 seasons pushed win rate
-                                 // from ~1% to ~23% for always_contract).
+  totalSeasons: 40,              // 10 years — the validated kill-gate horizon.
+                                 // Do not extend without rerunning the sim:
+                                 // 160 seasons pushed win rate ~1% -> ~23%.
   winTreasury: 11000,
   winReputation: 60,
   winEligibleFromSeason: 20,
@@ -165,8 +206,7 @@ const CONFIG = {
   repDecay: 0.98,
   mutinyTreasuryStrikes: 2,
   mutinyLoyaltyCeilingForStrikes: 30,
-  /* storage keys — chosen now, treated as permanent. Renaming these
-     later orphans every save already on a player's device. */
+  /* storage keys — permanent. Renaming orphans every existing save. */
   saveKey: "the-company-v1",
   slotKey: "the-company-slot-v1-"
 };
@@ -176,13 +216,34 @@ const WINTER_IDX = 3;
 const seasonOf = t => SEASONS[t % CONFIG.seasonsPerYear];
 const yearOf = t => CONFIG.startYear + Math.floor(t / CONFIG.seasonsPerYear);
 
+/* ----------------------------------------------------------- data - */
 const FACTIONS = [
-  {id:"florence", name:"Florence"},
-  {id:"milan", name:"Milan"},
-  {id:"papal", name:"the Papal States"},
-  {id:"pisa", name:"Pisa"},
-  {id:"padua", name:"Padua"}
+  {id:"florence", name:"Florence", short:"Florence",
+   note:"Merchant money, slow to pay and long of memory. Pays late; forgets nothing, good or bad.",
+   payBias:0.98, riskBias:0.95, loyaltyMemory:1.35},
+  {id:"milan", name:"Milan", short:"Milan",
+   note:"Visconti gold, and Visconti terms. The best rates in Italy, offered by men who break faith first.",
+   payBias:1.14, riskBias:1.10, loyaltyMemory:0.75},
+  {id:"papal", name:"the Papal States", short:"Papal States",
+   note:"Legates, tithes and the threat of excommunication. Crosses a captain at his peril.",
+   payBias:1.02, riskBias:1.00, loyaltyMemory:1.00, excommunicates:true},
+  {id:"pisa", name:"Pisa", short:"Pisa",
+   note:"Poor, proud and desperate. Pays badly because it cannot pay well, and knows it.",
+   payBias:0.86, riskBias:1.15, loyaltyMemory:1.15},
+  {id:"padua", name:"Padua", short:"Padua",
+   note:"Small, careful, and grateful for a company that keeps its word. Carrara pay in full or not at all.",
+   payBias:0.94, riskBias:0.90, loyaltyMemory:1.45}
 ];
+const facOf = id => FACTIONS.find(f => f.id === id);
+
+const DIFFICULTY = {
+  condottiere:{name:"Condottiere", note:"Rates are good and the field is kind. For learning the road.",
+    pay:1.15, risk:0.85, coalition:0.75},
+  captain:{name:"Captain", note:"The road as it was. The balance the simulation was tuned against.",
+    pay:1.00, risk:1.00, coalition:1.00},
+  adventurer:{name:"Adventurer", note:"Thin pay, hard fields, and leagues that form quickly.",
+    pay:0.88, risk:1.20, coalition:1.35}
+};
 
 const BUILDS = [
   {id:"balanced", name:"A balanced company", lances:200, quality:0.50, treasury:2000,
@@ -193,151 +254,712 @@ const BUILDS = [
    blurb:"Numerous and cheap to replace. Loses more fights, but a bad season costs less to fix."}
 ];
 
+/* Captain attributes. Light mechanics, by design — these shape who the
+   captain is and how events read, and nudge the numbers slightly. They
+   are not a second economy. */
+const ATTRS = [
+  {id:"presence", name:"Presence", note:"What employers see across a table. Better terms."},
+  {id:"cunning", name:"Cunning", note:"What towns fear when you ride up. Richer tribute."},
+  {id:"command", name:"Command", note:"What your men keep when it goes wrong. Fewer losses."},
+  {id:"constitution", name:"Constitution", note:"What you can take yourself. Steadier under trouble."}
+];
+const ATTR_BASE = 2, ATTR_MAX = 5, ATTR_POINTS = 4;
+
+/* Equipment and wardrobe: identity you buy. Small dread/presence nudges,
+   large narrative weight. */
+const KIT = {
+  armour:[
+    {id:"mail", name:"A mail haubergeon", cost:0, dread:0, note:"Serviceable, patched, and yours already."},
+    {id:"brig", name:"Brigandine, riveted", cost:420, dread:3, note:"Cloth over plate. Quiet money."},
+    {id:"plate", name:"Milanese plate", cost:1400, dread:8, note:"The best harness in Christendom, and it shows."}
+  ],
+  horse:[
+    {id:"rouncey", name:"A rouncey", cost:0, dread:0, note:"A road horse. It gets you there."},
+    {id:"courser", name:"A courser", cost:380, dread:2, note:"Fast, and worth looking at."},
+    {id:"destrier", name:"A destrier", cost:1200, dread:6, note:"A warhorse that cost more than most men earn in a life."}
+  ],
+  blade:[
+    {id:"arming", name:"An arming sword", cost:0, dread:0, note:"Plain, balanced, unremarkable."},
+    {id:"estoc", name:"An estoc", cost:340, dread:2, note:"For the gaps in plate. A specialist's answer."},
+    {id:"gilt", name:"A gilded longsword", cost:1000, dread:5, note:"Half weapon, half argument."}
+  ],
+  wardrobe:[
+    {id:"plain", name:"A plain travelling cloak", cost:0, dread:0, presence:0, note:"Nobody looks twice."},
+    {id:"crimson", name:"A crimson mantle", cost:300, dread:2, presence:2, note:"Seen from the far end of a hall."},
+    {id:"livery", name:"Company livery in your colours", cost:760, dread:4, presence:3, note:"Two hundred men wearing your banner on their backs."},
+    {id:"cloth", name:"Cloth of gold", cost:1600, dread:6, presence:6, note:"Vulgar, effective, and remembered."}
+  ]
+};
+
+/* Company investments — permanent, and they compete with recruitment and
+   with the treasury the win condition needs. Sim-validated: ablation put
+   win rate at ~10% with them and ~1% without, so these are the
+   progression arc, not decoration. */
+const INVESTMENTS = [
+  {id:"surgeon", name:"A surgeon", cost:900,
+   note:"A quarter of the men you would have buried ride again.", effect:"Casualties reduced by a quarter."},
+  {id:"herald", name:"A herald", cost:800,
+   note:"Word of what you did travels further, and truer.", effect:"Reputation gained grows by a third."},
+  {id:"paymaster", name:"A paymaster", cost:1000,
+   note:"A man who can explain a late wage in a way a captain cannot.", effect:"A missed wage costs far less loyalty."},
+  {id:"baggage", name:"A baggage train", cost:1200,
+   note:"Tents, carts, a forge on wheels. The company stops bleeding on the march.", effect:"Casualties reduced by a sixth."},
+  {id:"forge", name:"An armourer's forge", cost:1500,
+   note:"Harness mended properly, and slowly made better.", effect:"Quality rises each season, to a ceiling."},
+  {id:"quarters", name:"Winter quarters", cost:2000,
+   note:"A walled town that will have you back each winter.", effect:"Rest restores more, and pays a garrison fee."}
+];
+const invDef = id => INVESTMENTS.find(i => i.id === id);
+
+/* ------------------------------------------------------- name tables - */
+const FIRST = ["Giovanni","Ambrogio","Niccolò","Bartolomeo","Guido","Ercole","Taddeo","Rinaldo",
+  "Ottone","Cristoforo","Lorenzo","Federigo","Ugolino","Malatesta","Corrado","Baldassare",
+  "John","Richard","Walter","Andrew","Hugh","Robert","Thomas","Simon",
+  "Konrad","Werner","Hannekin","Albrecht","Dietrich","Bertold"];
+const LAST = ["da Barbiano","degli Ubaldini","da Polenta","di Montone","da Rimini","Acuto","della Scala",
+  "da Carrara","Sterz","von Landau","of Norwich","the Fleming","Bracciaforte","Malarama","dal Verme",
+  "Novello","Testaferro","da Imola","Brandolini","Grimaldi","the Gascon","of Hainault"];
+const BYNAME = ["the Patient","the Red","Longshanks","One-Eye","the Grey","Ironhand","the Quiet",
+  "Coldhand","the Boar","Windrider","Halfpenny","the Lame","Blacktooth","the Bell","Hawkbeak"];
+const TOWNS = ["Cortona","Borgo San Sepolcro","Poggibonsi","Montepulciano","Colle","Figline",
+  "Castiglione","Pontremoli","San Miniato","Anghiari","Volterra","Prato","Certaldo","Bibbiena"];
+
+const TRAITS = [
+  {id:"steady", name:"steady", note:"Holds when others do not."},
+  {id:"greedy", name:"grasping", note:"Counts the plunder before the dead."},
+  {id:"pious", name:"pious", note:"Will not ride against the Church gladly."},
+  {id:"brutal", name:"brutal", note:"Feared by towns, and by some of your own."},
+  {id:"shrewd", name:"shrewd", note:"Reads a contract better than the captain who signs it."},
+  {id:"hotheaded", name:"hot-headed", note:"First over the ditch, and not always usefully."},
+  {id:"loyal", name:"old-faithful", note:"Rode with you before there was a company."},
+  {id:"ambitious", name:"ambitious", note:"Would rather be captain, and knows it."}
+];
+
+/* --------------------------------------------------------- heraldry - */
+const TINCTURES = {
+  or:"#C9A227", argent:"#D5D0C4", gules:"#9C2B2B", azure:"#2B4C8C",
+  sable:"#17150F", vert:"#2F6B3A", purpure:"#5B2B6B"
+};
+const METALS = ["or","argent"];
+const COLOURS = ["gules","azure","sable","vert","purpure"];
+const DIVISIONS = ["plain","perPale","perFess","quarterly","perBend","perSaltire","perChevron","barry","paly"];
+
+/* 11x11 charges. Geometric shapes read; creatures do not at this size.
+   A lion, an eagle, a sword and a key were all drawn, rendered on a
+   contact sheet, and cut: the lion read as a shrub, the eagle as a
+   scribble, the sword as three vertical bars. Nothing here is on the
+   sheet that did not survive being looked at. Creatures could come back
+   on a larger grid; they are not worth a muddy glyph now. */
+const CHARGES = {
+  cross:[
+    "....###....","....###....","....###....","....###....","###########",
+    "###########","###########","....###....","....###....","....###....","....###...."],
+  saltire:[
+    "##.......##","###.....###",".###...###.","..###.###..","...#####...",
+    "....###....","...#####...","..###.###..",".###...###.","###.....###","##.......##"],
+  chevron:[
+    ".....#.....","....###....","...#####...","..###.###..",".###...###.",
+    "###.....###","##.......##","#.........#","...........","...........","..........."],
+  roundel:[
+    "...#####...","..#######..",".#########.","###########","###########",
+    "###########","###########","###########",".#########.","..#######..","...#####..."],
+  lozenge:[
+    ".....#.....","....###....","...#####...","..#######..",".#########.",
+    "###########",".#########.","..#######..","...#####...","....###....",".....#....."],
+  mullet:[
+    ".....#.....",".....#.....","....###....","....###....","###########",
+    ".#########.","..#######..","...#####...","..##...##..",".##.....##.","##.......##"],
+  crescent:[
+    "...#####...","..###.###..",".###...###.",".##.....##.",".##........",
+    ".##........",".##........",".##.....##.",".###...###.","..###.###..","...#####..."],
+  tower:[
+    ".#.#.#.#.#.",".#########.",".#########.",".##.....##.",".##.###.##.",
+    ".#########.",".#########.",".##.###.##.",".#########.",".#########.",".#########."],
+  fleur:[
+    ".....#.....","....###....","....###....",".#..###..#.",".##.###.##.",
+    ".#########.","..#######..","....###....","...#####...","....###....",".....#....."],
+  annulet:[
+    "...#####...","..##...##..",".##.....##.","##.......##","#.........#",
+    "#.........#","#.........#","##.......##",".##.....##.","..##...##..","...#####..."],
+  pile:[
+    "###########","###########",".#########.",".#########.","..#######..",
+    "..#######..","...#####...","...#####...","....###....","....###....",".....#....."],
+  billet:[
+    "...........","..#######..","..#######..","..#######..","..#######..",
+    "..#######..","..#######..","..#######..","..#######..","..#######..","..........."]
+};
+const CHARGE_IDS = Object.keys(CHARGES);
+
+/* A curated set of seeds for the preset gallery — these are just seeds
+   through the same generator, so the generator remains the only asset. */
+const BANNER_PRESETS = ["hawkwood","sterz","landau","barbiano","aguto","montone","brandolini",
+  "malatesta","urslingen","carrara","visconti","novello","gattamelata","attendolo","piccinino",
+  "tarlati","broglia","canolles","baumgarten","altobello"];
+
+/* ------------------------------------------------------------ flavor -
+   Token substitution: {fac} employer, {lt} a lieutenant by name,
+   {town} a town, {n} a number the caller supplies. */
+const FLAVOR = {
+  winBig:[
+    "They broke before the second charge. {lt} had the pursuit and did not stop it early.",
+    "A short, ugly business in the mist, and then a field that belonged to {fac}.",
+    "The enemy captain sold his own baggage to pay his ransom. {lt} handled the counting.",
+    "You took the ford at dawn and held it until they stopped coming.",
+    "Their line folded at the centre. Whatever they were paid, it was not enough.",
+    "The whole affair was decided before noon and celebrated well past it.",
+    "{lt} came back with a banner that was not ours and would not say how.",
+    "A rout, and a long golden afternoon of picking over what they dropped."],
+  winNarrow:[
+    "It held. Barely, and with {lt} shouting himself hoarse on the right.",
+    "A near thing on broken ground. The men know how near, which is worse.",
+    "You won the field and would not care to do it again that way.",
+    "Both sides withdrew and only one of them called it a victory. Loudly.",
+    "The reserve went in late and only just in time.",
+    "A grinding, graceless day. {fac} will hear it was glorious.",
+    "The line bent twice and did not break. That is all the day was."],
+  lossNarrow:[
+    "You gave ground in order and lost it anyway.",
+    "A bad ford, a worse hour, and a withdrawal that cost more than the crossing.",
+    "{lt} held the rearguard while the rest got clear. Not all of the rearguard got clear.",
+    "The field went to the other side by an hour of daylight.",
+    "Nothing was lost that cannot be replaced, except the men."],
+  lossBad:[
+    "A rout. The word will reach {fac} before your account of it does.",
+    "It came apart at the centre and kept coming apart all the way to the baggage.",
+    "{lt} was pulled out of a ditch with his harness split and would not speak of it.",
+    "Half a season of pay, spent in an afternoon, for a hill nobody wanted.",
+    "You lost the field, the baggage, and the argument about whose fault it was."],
+  raidEasy:[
+    "{town} paid without a word being raised. The gates stayed shut and the money came over the wall.",
+    "The elders of {town} met you a mile out with a chest and a very careful speech.",
+    "{town} had heard you were coming. The sum was ready and slightly larger than asked.",
+    "You sat outside {town} for two days. On the third they paid to watch you leave.",
+    "{lt} did the talking at {town}. Nothing burned, which was the point."],
+  raidResisted:[
+    "{town} had a militia with opinions. It cost men to change them.",
+    "Crossbows on the wall at {town}, and a sortie at dusk that nearly worked.",
+    "{town} paid in the end, and made you earn it first.",
+    "A bad gate at {town}, a worse alley, and {lt} carrying someone out."],
+  restWinter:[
+    "Winter. Harness mended, quarrels settled, and the wine account frightening.",
+    "Snow closed the passes. The men gambled away three months of pay among themselves.",
+    "A quiet winter. Two marriages, one funeral, and no fighting worth the name.",
+    "{lt} spent the season drilling the new men and complaining about them.",
+    "Winter quarters. The company thickens up again and remembers it likes the work.",
+    "Cold, dull, and the best thing for the company after a hard year."],
+  restSummer:[
+    "A season under canvas with nothing to do but eat the country and wait.",
+    "No contract worth signing. The men rested and grew expensive.",
+    "You sat out the season. Idle soldiers cost exactly as much as busy ones.",
+    "A month of drill, a month of dice, and not a florin earned worth naming."],
+  wageShort:[
+    "Wages fell short. The corporals are talking among themselves, and stopping when you pass.",
+    "No pay this season. {lt} spoke for the men, which is better than the alternative.",
+    "The chest came up empty in front of two hundred men. That will be remembered.",
+    "Short wages. Someone has scratched a number into the paymaster's door."],
+  camp:[
+    "{lt} and one of the corporals settled a matter with knives. Both will ride.",
+    "A priest attached himself to the company and nobody can remember agreeing to it.",
+    "Three men deserted to a rival. Two came back within the month, poorer.",
+    "The company dog died. The mood is worse than one dog should account for.",
+    "{lt} has taken a wife in {town} and intends to keep riding anyway."]
+};
+
+/* ------------------------------------------------------ incidents -
+   Threshold-triggered, not random noise. Each names its condition, a
+   weight, and up to three choices with real consequences. */
+const INCIDENTS = [
+  {id:"legate", weight:3,
+   when:s => s.dread > 45 && !s.flags.legate,
+   title:"A papal legate on the road",
+   text:"He does not dismount. He asks whether the Company of {co} understands what excommunication would mean for its contracts, and waits.",
+   choices:[
+     {t:"Kneel and take the penance", fx:s => { s.dread = Math.max(0, s.dread-18); s.honor=Math.min(100,s.honor+8); rep(s,"papal",18); s.flags.legate=1;
+       return "You knelt in the road in front of your own men. The legate was satisfied; the men were quiet about it."; }},
+     {t:"Send him back with nothing", fx:s => { s.dread=Math.min(100,s.dread+10); rep(s,"papal",-35); s.flags.legate=1;
+       return "He rode off promising Rome would hear of it. Your men thought it was funny for about a month."; }},
+     {t:"Pay him off — 600 fl.", cost:600, fx:s => { coin(-600,"a legate's discretion"); rep(s,"papal",8); s.flags.legate=1;
+       return "Money changed hands and no one used the word bribe. The matter went away."; }}]},
+
+  {id:"poach", weight:4,
+   when:s => s.loyalty < 45 && s.rivals.length > 0,
+   title:"A rival is buying your men",
+   text:"{riv} has been paying corporals to drink with him. Two of yours have not come back.",
+   choices:[
+     {t:"Raise wages this season — 700 fl.", cost:700, fx:s => { coin(-700,"wages raised against a poacher"); s.loyalty=Math.min(100,s.loyalty+14);
+       return "You paid over the odds and let it be seen you had. The drinking stopped."; }},
+     {t:"Make an example of a deserter", fx:s => { s.loyalty=Math.min(100,s.loyalty+5); s.dread=Math.min(100,s.dread+8); s.honor=Math.max(0,s.honor-5);
+       return "One man hanged at the edge of camp. Nobody else left that season, and nobody looked at you either."; }},
+     {t:"Let them go", fx:s => { s.loyalty=Math.max(0,s.loyalty-6);
+       return "You let them ride out. The ones who stayed noticed that leaving was cheap."; }}]},
+
+  {id:"plague", weight:2,
+   when:s => s.turn > 6 && !s.flags.plague,
+   title:"Sickness in the camp",
+   text:"It starts in the horse lines and is through the infantry in a fortnight. The physicians of {town} will not come out to you.",
+   choices:[
+     {t:"Break camp and scatter the company", fx:s => { s.lances=Math.max(0,s.lances*0.94); s.loyalty=Math.max(0,s.loyalty-4); s.flags.plague=1;
+       return "You split into a dozen camps across the hills. It cost you cohesion and saved most of the men."; }},
+     {t:"Hold together and ride it out", fx:s => { s.lances=Math.max(0,s.lances*0.86); s.loyalty=Math.min(100,s.loyalty+6); s.flags.plague=1;
+       return "You stayed. It took a fifth of the sick with it, and the company came out of it closer than it went in."; }}]},
+
+  {id:"convoy", weight:3,
+   when:s => s.underContract,
+   title:"A pay convoy, lightly escorted",
+   text:"Word comes that {fac}'s own pay chest is two valleys away with thirty horse around it. It is not your money. It is very close.",
+   choices:[
+     {t:"Take it", fx:s => { const t=Math.round(rand(900,2200)); coin(t,"a stolen pay chest"); rep(s,s.underContract,-45); s.dread=Math.min(100,s.dread+12); s.honor=Math.max(0,s.honor-14);
+       return `You took ${fmt(t)} florins that belonged to your own employer. They will work out who did it.`; }},
+     {t:"Escort it in, unasked", fx:s => { rep(s,s.underContract,22); s.honor=Math.min(100,s.honor+8);
+       return "You delivered it whole and refused a reward in front of witnesses, which was the reward."; }},
+     {t:"Ride the other way", fx:s => "You went nowhere near it. Some of the corporals are still sour about that."}]},
+
+  {id:"feud", weight:4,
+   when:s => s.lieutenants.length >= 2,
+   title:"A feud among your officers",
+   text:"{lt} and another of your lieutenants have not spoken in six weeks, and the men have taken sides.",
+   choices:[
+     {t:"Back {lt}", fx:s => { const l=s.lieutenants[0]; if(l) l.loyalty=Math.min(100,l.loyalty+20);
+       const o=s.lieutenants[1]; if(o) o.loyalty=Math.max(0,o.loyalty-25);
+       return "You picked a side in front of everyone. One of them will not forget it, and neither will the other."; }},
+     {t:"Break them both back to the ranks", fx:s => { s.loyalty=Math.max(0,s.loyalty-8); s.lieutenants.forEach(l=>l.loyalty=Math.max(0,l.loyalty-6));
+       return "Harsh, even-handed, and resented by everyone equally. The feud stopped."; }},
+     {t:"Put them in the same lance", fx:s => { s.loyalty=Math.min(100,s.loyalty+7); s.lieutenants.forEach(l=>l.loyalty=Math.min(100,l.loyalty+5));
+       return "You made them share a fire for a season. It worked, which surprised everyone including you."; }}]},
+
+  {id:"betray", weight:3,
+   when:s => s.underContract && s.turn > 8,
+   title:"An offer from the other side",
+   text:"A man with no livery finds your tent at night. His master would pay a great deal for the Company of {co} to be somewhere else next month.",
+   choices:[
+     {t:"Take the money — 1,800 fl.", fx:s => { coin(1800,"a bribe to be elsewhere"); rep(s,s.underContract,-50); s.honor=Math.max(0,s.honor-18); s.dread=Math.min(100,s.dread+6);
+       return "You were somewhere else next month. Everyone understood why, which is the problem with it."; }},
+     {t:"Refuse, and tell your employer", fx:s => { rep(s,s.underContract,26); s.honor=Math.min(100,s.honor+10);
+       return "You handed the man over with his purse untouched. It was noticed at a level above your employer."; }},
+     {t:"Refuse, and say nothing", fx:s => { s.honor=Math.min(100,s.honor+3);
+       return "He rode off unharmed and unreported. You may want that door again."; }}]},
+
+  {id:"ransom", weight:3,
+   when:s => s.stat.wonBattles >= 2,
+   title:"A prisoner worth keeping",
+   text:"One of {lt}'s men has taken a knight whose family has land near {town}. He is worth a ransom, and he knows it.",
+   choices:[
+     {t:"Ransom him properly", fx:s => { const t=Math.round(rand(500,1400)); coin(t,"a ransom, correctly handled"); s.honor=Math.min(100,s.honor+5);
+       return `${fmt(t)} florins, paid in full, and a courteous letter with it. This is how the trade is supposed to work.`; }},
+     {t:"Let his captor keep it all", fx:s => { s.loyalty=Math.min(100,s.loyalty+9);
+       return "You waived the captain's share. Two hundred men heard about it within a day."; }},
+     {t:"Hold him and raise the price", fx:s => { const t=Math.round(rand(900,2400)); coin(t,"a ransom, hard-bargained"); s.honor=Math.max(0,s.honor-7); s.dread=Math.min(100,s.dread+5);
+       return `You squeezed ${fmt(t)} out of them over four months. His family paid, and remembered.`; }}]},
+
+  {id:"storm", weight:2,
+   when:s => s.turn > 3,
+   title:"The season turns against you",
+   text:"Rain for five weeks. The roads are soup, the horses are lame, and the country you are sitting in has stopped feeding you.",
+   choices:[
+     {t:"Move to better ground", fx:s => { s.lances=Math.max(0,s.lances*0.97); coin(-180,"a miserable march");
+       return "A wretched march that cost horses and a little money, and got the company out of the mud."; }},
+     {t:"Sit it out", fx:s => { s.loyalty=Math.max(0,s.loyalty-7);
+       return "You stayed put and let the men be miserable. They were, comprehensively."; }}]},
+
+  {id:"reputation", weight:2,
+   when:s => s.honor > 65 && s.turn > 10,
+   title:"A reputation for keeping terms",
+   text:"A notary from {town} asks — politely, and in writing — whether the Company of {co} would witness a contract between two houses that trust nobody else.",
+   choices:[
+     {t:"Put your name to it", fx:s => { FACTIONS.forEach(f=>rep(s,f.id,6)); s.honor=Math.min(100,s.honor+4);
+       return "Your name on a piece of paper, doing work no lance could. Every house in Tuscany saw it."; }},
+     {t:"Decline — you are a soldier", fx:s => { s.dread=Math.min(100,s.dread+3);
+       return "You sent it back unsigned. Let them wonder what the company is for."; }}]},
+
+  {id:"oldfriend", weight:2,
+   when:s => s.turn > 12 && s.rivals.length > 0,
+   title:"A rival captain proposes terms",
+   text:"{riv} suggests the two companies stop underbidding each other. Split the season, split the country, and let the cities pay properly for once.",
+   choices:[
+     {t:"Agree to the carve-up", fx:s => { s.flags.pact=1; s.honor=Math.max(0,s.honor-6); s.dread=Math.min(100,s.dread+5);
+       return "A gentleman's arrangement between two men who are not gentlemen. Rates went up immediately."; }},
+     {t:"Refuse and undercut him", fx:s => { s.flags.feudWith=1; rep(s,"florence",4);
+       return "You went straight to his employer with a better price. There is no going back from that."; }}]}
+];
+
+/* ----------------------------------------------------------- helpers - */
 function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
-function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]); }
 function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 function rand(lo, hi){ return lo + Math.random() * (hi - lo); }
-function choice(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
 function $(sel){ return document.querySelector(sel); }
+function rep(s, facId, delta){
+  if(delta > 0) delta *= mods().repGain;
+  s.reputation[facId] = clamp(s.reputation[facId] + delta, -100, 100);
+}
 
-/* --------------------------------------------------------- state - */
+/* seeded PRNG for heraldry only — the game itself uses Math.random */
+function hashStr(str){
+  let h = 2166136261 >>> 0;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function rpick(r, arr){ return arr[Math.floor(r() * arr.length)]; }
+
+/* --------------------------------------------------- banner generator -
+   The generator IS the asset: only a short seed string is persisted, so
+   there is no art pipeline and nothing to lose when a directory is
+   cleared. Heraldry's metal-on-colour rule is what makes the output read
+   as arms rather than noise. */
+function bannerSpec(seed){
+  const r = mulberry32(hashStr(String(seed)));
+  const fieldIsMetal = r() < 0.45;
+  const fieldPool = fieldIsMetal ? METALS : COLOURS;
+  const otherPool = fieldIsMetal ? COLOURS : METALS;
+  const t1 = rpick(r, fieldPool);
+  const t2 = rpick(r, otherPool);
+  const division = rpick(r, DIVISIONS);
+  /* A charge sits across BOTH field tinctures on a divided field, so it
+     must differ from each of them or it vanishes over half the banner —
+     the contact sheet had a white cross disappearing into white stripes.
+     On a plain field t2 is never drawn, so it carries no constraint. */
+  let pool = otherPool;
+  if(division !== "plain"){
+    const narrowed = otherPool.filter(t => t !== t2);
+    if(narrowed.length) pool = narrowed;
+  }
+  return { t1, t2, division, charge: rpick(r, CHARGE_IDS), chargeT: rpick(r, pool) };
+}
+const BW = 22, BH = 28;  // banner grid, in cells
+function drawBanner(canvas, seed, scale){
+  const spec = bannerSpec(seed);
+  const ctx = canvas.getContext("2d");
+  canvas.width = BW * scale; canvas.height = BH * scale;
+  ctx.imageSmoothingEnabled = false;
+  const c1 = TINCTURES[spec.t1], c2 = TINCTURES[spec.t2];
+  const cell = (x,y,col) => { ctx.fillStyle = col; ctx.fillRect(x*scale, y*scale, scale, scale); };
+
+  for(let y=0;y<BH;y++){
+    for(let x=0;x<BW;x++){
+      let col = c1;
+      const half = BW/2, halfY = BH/2;
+      switch(spec.division){
+        case "perPale":    col = x < half ? c1 : c2; break;
+        case "perFess":    col = y < halfY ? c1 : c2; break;
+        case "quarterly":  col = ((x<half) === (y<halfY)) ? c1 : c2; break;
+        case "perBend":    col = (x/BW + y/BH) < 1 ? c1 : c2; break;
+        case "perSaltire": col = (Math.abs(x/BW-0.5) > Math.abs(y/BH-0.5)) ? c1 : c2; break;
+        case "perChevron": col = (y/BH) > (0.35 + Math.abs(x/BW-0.5)) ? c2 : c1; break;
+        case "barry":      col = (Math.floor(y/4) % 2) ? c2 : c1; break;
+        case "paly":       col = (Math.floor(x/4) % 2) ? c2 : c1; break;
+        default:           col = c1;
+      }
+      cell(x,y,col);
+    }
+  }
+  // charge, centred
+  const g = CHARGES[spec.charge];
+  const ox = Math.floor((BW - 11)/2), oy = Math.floor((BH - 11)/2);
+  for(let y=0;y<g.length;y++){
+    for(let x=0;x<g[y].length;x++){
+      if(g[y][x] !== "#") continue;
+      cell(ox+x, oy+y, TINCTURES[spec.chargeT]);
+    }
+  }
+  // staff
+  ctx.fillStyle = "#4A3B28";
+  ctx.fillRect(0, 0, Math.max(1, Math.floor(scale*0.8)), BH*scale);
+  return spec;
+}
+function bannerHTML(id, seed, scale, cls){
+  return `<canvas id="${id}" data-seed="${esc(seed)}" data-scale="${scale}" class="${cls||""}"></canvas>`;
+}
+function paintBanners(){
+  document.querySelectorAll("canvas[data-seed]").forEach(cv => {
+    drawBanner(cv, cv.dataset.seed, +cv.dataset.scale || 2);
+  });
+}
+function randomSeed(){ return Math.random().toString(36).slice(2, 10); }
+
+/* ------------------------------------------------------------- state - */
 let S = null;
-let build = null;     // in-progress company creation pick
-let sheetFn = null;   // currently open sheet renderer, or null
+let build = null;
+let sheetFn = null;
+let pendingIncident = null;
 
-function newGame(captainName, b){
+function makeLieutenant(){
+  const name = `${pick(FIRST)} ${pick(LAST)}`;
+  return {
+    name,
+    byname: Math.random() < 0.45 ? pick(BYNAME) : null,
+    trait: pick(TRAITS).id,
+    skill: Math.round(rand(2, 5)),
+    loyalty: Math.round(rand(55, 85)),
+    alive: true
+  };
+}
+function makeRival(){
+  return {
+    name: `${pick(FIRST)} ${pick(LAST)}`,
+    company: pick(["the White Company","the Company of the Star","the Great Company",
+      "the Company of the Hat","the Company of Saint George","the Company of the Rose"]),
+    seed: randomSeed(),
+    strength: Math.round(rand(120, 320)),
+    renown: Math.round(rand(10, 60))
+  };
+}
+
+function newGame(captainName, b, attrs, bannerSeed, difficulty){
   S = {
-    v: 1,
-    captainName: captainName,
-    companyName: "The Company of " + captainName,
-    build: b.id,
+    v: 2,
+    captainName, companyName: `The Company of ${captainName}`,
+    build: b.id, difficulty: difficulty || "captain",
     turn: 0,
-    difficulty: "normal",
-    treasury: b.treasury,
-    lances: b.lances,
-    startLances: b.lances,
-    quality: b.quality,
-    loyalty: 70,
-    dread: 0,
-    honor: 50,
+    treasury: b.treasury, lances: b.lances, startLances: b.lances, quality: b.quality,
+    loyalty: 70, dread: 0, honor: 50,
     reputation: Object.fromEntries(FACTIONS.map(f => [f.id, 0])),
-    offers: [],
+    attrs: attrs || Object.fromEntries(ATTRS.map(a => [a.id, ATTR_BASE])),
+    kit: {armour:"mail", horse:"rouncey", blade:"arming", wardrobe:"plain"},
+    investments: [],
+    banner: bannerSeed || randomSeed(),
+    lieutenants: Array.from({length:4}, makeLieutenant),
+    rivals: Array.from({length:3}, makeRival),
+    offers: [], underContract: null,
     negTreasuryStrikes: 0,
-    ledger: [],
-    journal: [],
-    stat: {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0},
-    over: null,
-    flags: {}
+    tab: "field",
+    ledger: [], journal: [], journalSeq: 0,
+    stat: {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0, incidents:0},
+    over: null, flags: {}
   };
   rollOffers();
-  post("gold", "Turn ledger opened, " + yearOf(0) + ". " + S.companyName + " takes the road, " +
-    fmt(S.lances) + " lances strong.");
+  post("gold", `${S.companyName} takes the road out of ${pick(TOWNS)}, ${fmt(S.lances)} lances strong, in the spring of ${yearOf(0)}.`);
   save();
 }
 
-/* ------------------------------------------------------ persistence - */
+/* ------------------------------------------------------- persistence - */
 function save(){ try{ localStorage.setItem(CONFIG.saveKey, JSON.stringify(S)); }catch(e){} }
 function load(){
   try{
     const raw = localStorage.getItem(CONFIG.saveKey);
     if(!raw) return false;
     const o = JSON.parse(raw);
-    if(o && o.v === 1){ S = repair(o); return true; }
+    const m = migrate(o);
+    if(m){ S = m; return true; }
   }catch(e){}
   return false;
 }
 function wipe(){ try{ localStorage.removeItem(CONFIG.saveKey); }catch(e){} }
+
+/* v1 saves predate lieutenants, rivals, investments, the captain sheet and
+   the banner. They are migrated rather than discarded — a save on a
+   player's device is a contract, not a label. */
+function migrate(o){
+  if(!o) return null;
+  if(o.v === 1){
+    o.v = 2;
+    o.attrs = Object.fromEntries(ATTRS.map(a => [a.id, ATTR_BASE]));
+    o.kit = {armour:"mail", horse:"rouncey", blade:"arming", wardrobe:"plain"};
+    o.investments = [];
+    o.banner = randomSeed();
+    o.lieutenants = Array.from({length:4}, makeLieutenant);
+    o.rivals = Array.from({length:3}, makeRival);
+    o.difficulty = "captain";
+    o.underContract = null;
+    o.tab = "field";
+    if(!o.stat) o.stat = {};
+    o.stat.incidents = o.stat.incidents || 0;
+  }
+  if(o.v !== 2) return null;
+  return repair(o);
+}
 function repair(o){
-  // Forward-compatible defaults for any field a future schema bump adds.
-  if(!o.stat) o.stat = {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0};
+  if(!o.stat) o.stat = {seasons:0,contracts:0,raids:0,wonBattles:0,lostBattles:0,incidents:0};
   if(!o.flags) o.flags = {};
+  if(!o.attrs) o.attrs = Object.fromEntries(ATTRS.map(a => [a.id, ATTR_BASE]));
+  if(!o.kit) o.kit = {armour:"mail", horse:"rouncey", blade:"arming", wardrobe:"plain"};
+  if(!Array.isArray(o.investments)) o.investments = [];
+  if(!Array.isArray(o.lieutenants)) o.lieutenants = Array.from({length:4}, makeLieutenant);
+  if(!Array.isArray(o.rivals)) o.rivals = Array.from({length:3}, makeRival);
+  if(!o.banner) o.banner = randomSeed();
+  if(!o.difficulty) o.difficulty = "captain";
+  if(!o.tab) o.tab = "field";
   if(o.negTreasuryStrikes === undefined) o.negTreasuryStrikes = 0;
+  if(o.journalSeq === undefined) o.journalSeq = (o.journal||[]).length;
+  if(o.underContract === undefined) o.underContract = null;
   return o;
 }
 const slotKey = i => CONFIG.slotKey + i;
 function slotRead(i){
   try{ const raw = localStorage.getItem(slotKey(i)); if(!raw) return null;
-    const o = JSON.parse(raw); return (o && o.v === 1) ? o : null; }catch(e){ return null; }
+    return migrate(JSON.parse(raw)); }catch(e){ return null; }
 }
 function slotWrite(i){
   try{ localStorage.setItem(slotKey(i), JSON.stringify(S)); return true; }catch(e){ return false; }
 }
 function stateCard(o){
-  return { name:o.captainName, when: seasonOf(o.turn) + " " + yearOf(o.turn),
-    worth: Math.round(o.treasury), lances: Math.round(o.lances) };
+  return { name:o.captainName, when:`${seasonOf(o.turn)} ${yearOf(o.turn)}`, worth:Math.round(o.treasury) };
 }
 function exportText(){
   const o = JSON.parse(JSON.stringify(S));
-  o.ledger = (o.ledger || []).slice(-60);
-  o.journal = (o.journal || []).slice(0, 40);
+  o.ledger = (o.ledger||[]).slice(-60);
+  o.journal = (o.journal||[]).slice(0, 40);
   try{ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }catch(e){ return ""; }
 }
 function importText(txt){
   try{
     const o = JSON.parse(decodeURIComponent(escape(atob(txt.replace(/\s+/g,"")))));
-    if(!o || o.v !== 1 || typeof o.treasury !== "number") return null;
-    return repair(o);
+    if(!o || typeof o.treasury !== "number") return null;
+    return migrate(o);
   }catch(e){ return null; }
 }
 
-/* -------------------------------------------------------- ledger/journal - */
+/* ----------------------------------------------------- ledger/journal - */
 function coin(amount, item){
   amount = Math.round(amount);
   if(amount === 0) return 0;
   S.treasury += amount;
-  S.ledger.push({turn:S.turn, item, dare: amount<0?-amount:0, avere: amount>0?amount:0, bal: Math.round(S.treasury)});
+  S.ledger.push({turn:S.turn, item, out:amount<0?-amount:0, in:amount>0?amount:0, bal:Math.round(S.treasury)});
   if(S.ledger.length > 400) S.ledger.splice(0, S.ledger.length - 400);
   return amount;
 }
+/* Entries are stored newest-first for cheap trimming, but a season posts
+   narration, then its figures, then its dead — so within one season the
+   raw order reads backwards. `seq` preserves the order things actually
+   happened, and the view sorts by turn descending, seq ascending. */
 function post(kind, text){
-  S.journal.unshift({turn:S.turn, kind, text});
+  S.journalSeq = (S.journalSeq || 0) + 1;
+  S.journal.unshift({turn:S.turn, seq:S.journalSeq, kind, text});
   if(S.journal.length > 140) S.journal.length = 140;
 }
+function liveLts(){ return S.lieutenants.filter(l => l.alive); }
+function ltName(l){ return l.byname ? `${l.name} ${l.byname}` : l.name; }
+function someLt(){ const l = liveLts(); return l.length ? ltName(pick(l)) : "your senior corporal"; }
 
-/* -------------------------------------------------------------- engine -
-   Ported directly from prototypes/the_company_sim.py, formula for
-   formula, after that script's kill-gate run passed. See that file's
-   header for what was tuned and why. */
+/* Token substitution for every piece of flavor text. */
+function fill(tpl, ctx){
+  ctx = ctx || {};
+  return tpl
+    .replace(/\{lt\}/g, () => ctx.lt || someLt())
+    .replace(/\{fac\}/g, () => ctx.fac || (S.underContract ? facOf(S.underContract).name : "your employer"))
+    .replace(/\{town\}/g, () => ctx.town || pick(TOWNS))
+    .replace(/\{co\}/g, () => S.captainName)
+    .replace(/\{riv\}/g, () => ctx.riv || (S.rivals[0] ? S.rivals[0].name : "a rival captain"))
+    .replace(/\{n\}/g, () => ctx.n !== undefined ? fmt(ctx.n) : "some");
+}
+function flavor(bucket, ctx){ return fill(pick(FLAVOR[bucket]), ctx); }
 
+/* ------------------------------------------------------------- mods -
+   THE single modifier pipeline. Every bonus from investments, attributes,
+   equipment and difficulty is derived here, and both the numbers shown to
+   the player and the numbers used to resolve a season read from it. Two
+   independent derivations of the same value is how a displayed figure and
+   a resolved one drift apart; there is only one here. */
+function has(inv){ return S.investments.includes(inv); }
+function kitOf(slot){ return KIT[slot].find(k => k.id === S.kit[slot]) || KIT[slot][0]; }
+function kitDread(){
+  return ["armour","horse","blade","wardrobe"].reduce((a,s) => a + (kitOf(s).dread||0), 0);
+}
+function kitPresence(){
+  return ["armour","horse","blade","wardrobe"].reduce((a,s) => a + (kitOf(s).presence||0), 0);
+}
+function mods(){
+  const d = DIFFICULTY[S.difficulty] || DIFFICULTY.captain;
+  const a = S.attrs;
+  return {
+    // Presence and finery improve the terms you are offered.
+    pay: d.pay * (1 + 0.02 * (a.presence - ATTR_BASE)) * (1 + 0.01 * kitPresence()),
+    risk: d.risk,
+    // Command keeps men alive; a surgeon and a baggage train do more.
+    casualty: (1 - 0.02 * (a.command - ATTR_BASE))
+              * (has("baggage") ? 0.85 : 1)
+              * (has("surgeon") ? 0.75 : 1),
+    // Cunning makes a town pay more to be left alone.
+    take: 1 + 0.03 * (a.cunning - ATTR_BASE),
+    repGain: has("herald") ? 1.30 : 1.00,
+    wageLoyaltyHit: has("paymaster") ? 8 : 15,
+    restLoyalty: has("quarters") ? 12 : 8,
+    garrison: has("quarters") ? 3 : 1,
+    coalition: d.coalition * (1 - 0.03 * (a.constitution - ATTR_BASE)),
+    dread: kitDread()
+  };
+}
+/* Effective dread = what you have earned, plus what you wear. One place. */
+function effDread(){ return clamp(S.dread + mods().dread, 0, 100); }
+
+/* ------------------------------------------------------------ engine - */
 function upkeepPerLance(){ return 3.0 + 4.0 * S.quality; }
+function wageBill(){ return S.lances * upkeepPerLance(); }
+function maxLances(){ return S.startLances * CONFIG.maxLancesMult; }
+
+/* A rival with high renown pushes rates down — the same market, contested. */
+function undercutFactor(){
+  const top = S.rivals.reduce((m,r) => Math.max(m, r.renown), 0);
+  if(S.flags.pact) return 1.04;         // a carve-up lifts everyone's rates
+  return clamp(1 - (top/100) * 0.18, 0.82, 1);
+}
 
 function rollOffers(){
   S.offers = [];
+  const m = mods();
   FACTIONS.forEach(f => {
-    if(Math.random() < 0.55) return; // not every faction is hiring every season
-    const rep = S.reputation[f.id];
-    const baseRate = rand(6.0, 10.0);
-    let payPerLance = baseRate * (1 + rep/200) * (1 + S.dread/300);
-    payPerLance = Math.max(payPerLance, 1.0);
-    const risk = rand(0.03, 0.09);
-    S.offers.push({faction:f.id, payPerLance, risk});
+    if(Math.random() < 0.55) return;
+    const base = rand(6.0, 10.0);
+    let pay = base * (1 + S.reputation[f.id]/200) * (1 + effDread()/300)
+              * f.payBias * m.pay * undercutFactor();
+    S.offers.push({
+      faction: f.id,
+      payPerLance: Math.max(pay, 1.0),
+      risk: rand(0.03, 0.09) * f.riskBias * m.risk
+    });
+  });
+}
+
+function hurtLieutenants(severity){
+  liveLts().forEach(l => {
+    if(Math.random() < severity * 0.10){
+      l.alive = false;
+      post("bad", `${ltName(l)} was killed.`);
+      S.loyalty = clamp(S.loyalty - 4, 0, 100);
+    }
   });
 }
 
 function resolveContract(offer){
-  const f = FACTIONS.find(x => x.id === offer.faction);
+  const f = facOf(offer.faction);
+  const m = mods();
   const pay = offer.payPerLance * S.lances;
   const winChance = 0.4 + 0.4 * S.quality;
+  S.underContract = f.id;
   let heavyLoss = false, income;
+
   if(Math.random() < winChance){
     const plunder = pay * rand(0.2, 0.6);
-    const casualties = offer.risk * S.lances * rand(0.3, 0.8);
-    S.reputation[f.id] = clamp(S.reputation[f.id] + rand(5,12), -100, 100);
+    const casualties = offer.risk * S.lances * rand(0.3, 0.8) * m.casualty;
+    const decisive = plunder > pay * 0.42;
+    rep(S, f.id, rand(5,12) * f.loyaltyMemory);
     FACTIONS.forEach(o => { if(o.id !== f.id) S.reputation[o.id] -= rand(0,3); });
     S.honor = clamp(S.honor + 2, 0, 100);
     S.lances = Math.max(0, S.lances - casualties);
     income = pay + plunder;
-    coin(income, "condotta — " + f.name + " (won the field)");
-    post("good", "Held the field for " + f.name + ". " + fmt(pay) + " in pay, " + fmt(plunder) + " in plunder, " + fmt(casualties) + " lances lost.");
+    coin(income, `condotta — ${f.short}`);
+    post("good", flavor(decisive ? "winBig" : "winNarrow", {fac:f.name}));
+    post("", `${fmt(pay)} in pay, ${fmt(plunder)} in plunder, ${fmt(casualties)} lances lost.`);
+    hurtLieutenants(0.4);
     S.stat.wonBattles++;
   } else {
-    const casualties = offer.risk * S.lances * rand(1.0, 2.2);
+    const casualties = offer.risk * S.lances * rand(1.0, 2.2) * m.casualty;
+    heavyLoss = casualties > 0.10 * S.lances;
     S.reputation[f.id] -= rand(3,8);
     S.lances = Math.max(0, S.lances - casualties);
     income = pay * 0.5;
-    heavyLoss = casualties > 0.10 * S.lances;
-    coin(income, "condotta — " + f.name + " (bad campaign)");
-    post("bad", "A bad campaign under " + f.name + "'s pay. " + fmt(casualties) + " lances lost, half wage only.");
+    coin(income, `condotta — ${f.short} (bad campaign)`);
+    post("bad", flavor(heavyLoss ? "lossBad" : "lossNarrow", {fac:f.name}));
+    post("", `Half wage only — ${fmt(income)}. ${fmt(casualties)} lances lost.`);
+    hurtLieutenants(1.1);
     S.stat.lostBattles++;
   }
   S.stat.contracts++;
@@ -345,93 +967,122 @@ function resolveContract(offer){
 }
 
 function resolveRaid(){
-  const others = FACTIONS.filter(f => f.id !== "__none__");
-  const target = choice(others);
-  const take = rand(500, 1400) * (1 + S.lances/400);
-  coin(take, "composizione — " + target.name);
+  const m = mods();
+  const target = pick(FACTIONS.filter(f => f.id !== S.underContract));
+  const town = pick(TOWNS);
+  const take = rand(500, 1400) * (1 + S.lances/400) * m.take;
+  coin(take, `composizione — ${town}`);
   S.dread = clamp(S.dread + rand(10,18), 0, 100);
   S.honor = clamp(S.honor - rand(6,14), 0, 100);
   S.reputation[target.id] = clamp(S.reputation[target.id] - rand(40,70), -100, 100);
   FACTIONS.forEach(f => { if(f.id !== target.id) S.reputation[f.id] -= rand(2,6); });
-  post("gold", "Rode to " + target.name + "'s walls and rode away " + fmt(take) + " richer for not burning them.");
-  let heavyLoss = false;
-  if(Math.random() < 0.15){
-    const casualties = rand(0.02, 0.06) * S.lances;
+  S.underContract = null;
+  const resisted = Math.random() < 0.15;
+  post("gold", flavor(resisted ? "raidResisted" : "raidEasy", {town}));
+  post("", `${fmt(take)} florins out of ${town}. ${target.name} will not forget it.`);
+  if(resisted){
+    const casualties = rand(0.02,0.06) * S.lances * m.casualty;
     S.lances = Math.max(0, S.lances - casualties);
-    post("bad", "The town's militia put up more fight than expected — " + fmt(casualties) + " lances lost.");
+    hurtLieutenants(0.5);
   }
   S.stat.raids++;
-  return {heavyLoss, gotPlunder:true};
+  return {heavyLoss:false, gotPlunder:true};
 }
 
-function resolveRest(){
-  S.loyalty = clamp(S.loyalty + 8, 0, 100);
+function resolveRest(isWinter){
+  const m = mods();
+  S.loyalty = clamp(S.loyalty + m.restLoyalty, 0, 100);
   S.dread = clamp(S.dread - 3, 0, 100);
-  const income = rand(20, 80);
-  coin(income, "winter quarters — small garrison fee");
-  post("", "Wintered in place. The men rest; the ledger barely moves.");
+  S.underContract = null;
+  const income = rand(20,80) * m.garrison;
+  coin(income, "garrison fee");
+  post("", flavor(isWinter ? "restWinter" : "restSummer"));
   return {heavyLoss:false, gotPlunder:false};
 }
 
 function payWages(){
-  const bill = S.lances * upkeepPerLance();
-  coin(-bill, "wages, " + fmt(S.lances) + " lances");
+  coin(-wageBill(), `wages, ${fmt(S.lances)} lances`);
   if(S.treasury >= 0){ S.negTreasuryStrikes = 0; return true; }
   S.negTreasuryStrikes++;
   return false;
 }
-
 function updateLoyalty(paid, heavyLoss, gotPlunder){
+  const m = mods();
   if(paid && gotPlunder) S.loyalty = clamp(S.loyalty + 5, 0, 100);
   else if(paid) S.loyalty = clamp(S.loyalty + 1, 0, 100);
-  else { S.loyalty = clamp(S.loyalty - 15, 0, 100);
-    post("bad", "Wages fell short. The corporals are talking among themselves."); }
+  else { S.loyalty = clamp(S.loyalty - m.wageLoyaltyHit, 0, 100); post("bad", flavor("wageShort")); }
   if(heavyLoss && !gotPlunder) S.loyalty = clamp(S.loyalty - 5, 0, 100);
 }
-
 function recruit(){
-  const maxLances = S.startLances * CONFIG.maxLancesMult;
-  if(S.lances >= maxLances) return;
+  if(S.lances >= maxLances()) return;
   const spare = S.treasury - CONFIG.recruitTreasuryBuffer;
   if(spare <= 0) return;
-  const affordable = spare / CONFIG.recruitCostPerLance;
-  const room = maxLances - S.lances;
-  const recruited = Math.max(0, Math.min(CONFIG.recruitRateCap, affordable, room));
-  if(recruited < 1) return;
-  S.lances += recruited;
-  coin(-recruited * CONFIG.recruitCostPerLance, "recruitment, " + fmt(recruited) + " lances");
+  const got = Math.max(0, Math.min(CONFIG.recruitRateCap, spare/CONFIG.recruitCostPerLance, maxLances()-S.lances));
+  if(got < 1) return;
+  S.lances += got;
+  coin(-got * CONFIG.recruitCostPerLance, `recruitment, ${fmt(got)} lances`);
+}
+function applyForge(){
+  if(!has("forge")) return;
+  const ceiling = BUILDS.find(b=>b.id===S.build).quality + 0.10;
+  if(S.quality < ceiling) S.quality = Math.min(ceiling, S.quality + 0.02);
+}
+/* Officers die and are not magically replaced, but a company that loses
+   its corporals promotes from the ranks — without this the roster empties
+   permanently over a 40-season run and the events stop having anyone to
+   name. */
+function promoteFromRanks(){
+  if(liveLts().length >= 3) return;
+  if(S.lances < 40) return;
+  if(Math.random() > 0.45) return;
+  const l = makeLieutenant();
+  l.loyalty = Math.round(rand(45, 70));
+  S.lieutenants.push(l);
+  post("", `${ltName(l)} was raised out of the ranks to corporal. He has the men behind him, which is most of it.`);
 }
 
+function driftRivals(){
+  S.rivals.forEach(r => {
+    r.renown = clamp(r.renown + rand(-4, 5), 0, 100);
+    r.strength = Math.max(40, r.strength + rand(-12, 14));
+  });
+}
 function checkCoalition(){
-  const threat = Math.max(0, (S.dread-50)/50) * Math.max(0, (40-S.honor)/40);
+  const m = mods();
+  const d = effDread();
+  const threat = Math.max(0,(d-50)/50) * Math.max(0,(40-S.honor)/40);
   if(threat <= 0) return false;
-  const chance = 0.03 + 0.20 * threat;
-  if(Math.random() < chance){
+  if(Math.random() < (0.03 + 0.20*threat) * m.coalition){
     const survive = Math.min(0.6, S.lances/600 + S.quality*0.2);
     if(Math.random() > survive) return true;
     S.lances *= rand(0.5, 0.75);
     S.dread = clamp(S.dread - 20, 0, 100);
-    post("bad", "A league of your enemies came for you and you barely held. The company is smaller for it.");
+    hurtLieutenants(1.4);
+    post("bad", "A league of your enemies came for you in the open and you barely held. The company is smaller for it.");
   }
   return false;
 }
-
 function checkWin(){
   if(S.turn < CONFIG.winEligibleFromSeason) return false;
   if(S.treasury < CONFIG.winTreasury) return false;
   return FACTIONS.some(f => S.reputation[f.id] >= CONFIG.winReputation);
 }
 
+function maybeIncident(){
+  if(Math.random() > 0.30) return null;
+  const pool = INCIDENTS.filter(i => { try{ return i.when(S); }catch(e){ return false; } });
+  if(!pool.length) return null;
+  const bag = [];
+  pool.forEach(i => { for(let k=0;k<(i.weight||1);k++) bag.push(i); });
+  return pick(bag);
+}
+
 function runSeason(action, offerIdx){
   const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
   let result;
-  if(action === "contract" && S.offers[offerIdx]){
-    result = resolveContract(S.offers[offerIdx]);
-  } else if(action === "raid" && !isWinter){
-    result = resolveRaid();
-  } else {
-    result = resolveRest();
-  }
+  if(action === "contract" && S.offers[offerIdx]) result = resolveContract(S.offers[offerIdx]);
+  else if(action === "raid" && !isWinter) result = resolveRaid();
+  else result = resolveRest(isWinter);
 
   FACTIONS.forEach(f => { S.reputation[f.id] *= CONFIG.repDecay; });
   S.dread *= CONFIG.dreadDecay;
@@ -439,205 +1090,467 @@ function runSeason(action, offerIdx){
   const paid = payWages();
   updateLoyalty(paid, result.heavyLoss, result.gotPlunder);
   recruit();
+  applyForge();
+  promoteFromRanks();
+  driftRivals();
+  if(Math.random() < 0.18) post("", flavor("camp"));
 
   S.stat.seasons++;
   S.turn++;
 
   if(S.loyalty <= 0){
-    S.over = {result:"mutiny", text:"The corporals put it to a vote in the night. By morning the company is three companies, and none of them is yours."};
+    const l = liveLts()[0];
+    S.over = {result:"mutiny", text: l
+      ? `${ltName(l)} put it to a vote in the night. By morning the company is three companies, and none of them is yours.`
+      : "The corporals put it to a vote in the night. By morning the company is three companies, and none of them is yours."};
   } else if(S.negTreasuryStrikes >= CONFIG.mutinyTreasuryStrikes && S.loyalty < CONFIG.mutinyLoyaltyCeilingForStrikes){
     S.over = {result:"mutiny", text:"Two seasons unpaid, and trust already thin. The company does not survive a third."};
   } else if(checkCoalition()){
-    S.over = {result:"coalition", text:"Every town you ever rode past for tribute has finally agreed on one thing. What is left of the company does not leave the field."};
+    const r = S.rivals[0];
+    S.over = {result:"coalition", text: r
+      ? `Every town you ever rode past for tribute has finally agreed on one thing, and they have given ${r.name} the command of it. What is left of the company does not leave the field.`
+      : "Every town you ever rode past for tribute has finally agreed on one thing. What is left of the company does not leave the field."};
   } else if(checkWin()){
-    const trusted = FACTIONS.find(f => S.reputation[f.id] >= CONFIG.winReputation);
-    S.over = {result:"won", text:trusted.name + " has offered you what no free company keeps forever: a permanent commission, a house, and a name that doesn't have to be feared to be paid. You take it."};
+    const t = FACTIONS.find(f => S.reputation[f.id] >= CONFIG.winReputation);
+    S.over = {result:"won", text:`${t.name} has offered you what no free company keeps forever: a permanent commission, a house, and a name that does not have to be feared to be paid. You take it.`};
   } else if(S.turn >= CONFIG.totalSeasons){
     S.over = {result:"retired", text:"You have outlasted most captains who ever rode this road. Old age takes you before the coalition or the creditors do — a quieter ending than most, and not a small one."};
   }
 
-  if(!S.over) rollOffers(); else S.offers = [];
+  if(!S.over){
+    rollOffers();
+    pendingIncident = maybeIncident();
+  } else { S.offers = []; pendingIncident = null; }
   save();
   render();
+  if(pendingIncident) openSheet(sheetIncident);
 }
 
-/* --------------------------------------------------------------- view - */
+/* -------------------------------------------------------------- views - */
 function chipsHTML(){
   const rows = [
-    ["Treasury", fmt(S.treasury) + " fl.", S.treasury < 0],
+    ["Treasury", `${fmt(S.treasury)} fl.`, S.treasury < 0],
     ["Lances", fmt(S.lances), S.lances < S.startLances*0.3],
     ["Loyalty", fmt(S.loyalty), S.loyalty < 25],
-    ["Dread", fmt(S.dread), false],
-    ["Honor", fmt(S.honor), false],
-    ["Quality", (S.quality*100).toFixed(0)+"%", false]
+    ["Dread", fmt(effDread()), false],
+    ["Honor", fmt(S.honor), S.honor < 20],
+    ["Quality", `${Math.round(S.quality*100)}%`, false]
   ];
-  return rows.map(([k,v,warn]) => '<div class="chip"><span class="k">'+k+'</span><span class="v'+(warn?' neg':'')+'">'+v+'</span></div>').join("");
+  return rows.map(([k,v,warn]) =>
+    `<div class="chip"><span class="k">${k}</span><span class="v${warn?" neg":""}">${v}</span></div>`).join("");
 }
-function repLineHTML(){
-  return '<div class="panel">' + FACTIONS.map(f => {
-    const v = S.reputation[f.id];
-    const pct = clamp((v+100)/2, 0, 100);
-    return '<div class="repline"><span class="f">'+f.name+'</span>' +
-      '<span class="bar"><i style="left:'+(v<0?pct:50)+'%;width:'+Math.abs(pct-50)+'%;background:'+(v<0?'var(--blood)':'var(--gold)')+'"></i></span>' +
-      '<span class="n '+(v<0?'neg':v>20?'pos':'')+'">'+Math.round(v)+'</span></div>';
-  }).join("") + '</div>';
-}
-function offersHTML(){
-  if(!S.offers.length) return '<p class="lede">No one is hiring this season.</p>';
-  return S.offers.map((o,i) => {
-    const f = FACTIONS.find(x => x.id === o.faction);
-    const pay = Math.round(o.payPerLance * S.lances);
-    return '<button class="offer" data-a="contract" data-v="'+i+'">' +
-      '<span class="pay">'+fmt(pay)+' fl.</span>' +
-      '<span class="t">'+f.name+'</span>' +
-      '<span class="s">A condotta for the season. Risk of the field: '+(o.risk*100).toFixed(0)+'%.</span></button>';
+const NAV = [["field","Field"],["company","Company"],["captain","Captain"],["world","World"],["account","Account"]];
+function navHTML(){
+  return NAV.map(([id,label]) => {
+    let badge = "";
+    if(id === "company" && affordableInvestments().length) badge = `<span class="badge">${affordableInvestments().length}</span>`;
+    return `<button data-a="go" data-v="${id}"${S.tab===id?' aria-current="page"':""}>${label}${badge}</button>`;
   }).join("");
 }
-function journalHTML(){
-  if(!S.journal.length) return '<p class="lede">Nothing written yet.</p>';
-  return '<div class="journal">' + S.journal.slice(0,25).map(j =>
-    '<div class="jrow '+j.kind+'"><span class="w">'+seasonOf(j.turn)+' '+yearOf(j.turn)+'</span>'+esc(j.text)+'</div>'
-  ).join("") + '</div>';
+function affordableInvestments(){
+  return INVESTMENTS.filter(i => !has(i.id) && S.treasury >= i.cost);
+}
+
+function viewField(){
+  const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
+  let h = "";
+  if(isWinter){
+    h += `<section class="sec"><h2>Winter quarters</h2>
+      <p class="lede">No campaigning in winter. The passes are shut and the country has nothing left to give.
+      ${has("quarters") ? "Your own quarters will have you back." : "You will sit where you are."}</p></section>`;
+  } else {
+    h += `<section class="sec"><h2>This season's offers</h2>`;
+    if(!S.offers.length){
+      h += `<div class="empty">No one is hiring this season. Every city is either at peace or out of money.
+        Ride for tribute, or rest and wait for a war.</div>`;
+    } else {
+      const uc = undercutFactor();
+      h += S.offers.map((o,i) => {
+        const f = facOf(o.faction);
+        const pay = Math.round(o.payPerLance * S.lances);
+        const top = S.rivals.slice().sort((a,b)=>b.renown-a.renown)[0];
+        return `<button class="offer" data-a="contract" data-v="${i}">
+          <span class="pay">${fmt(pay)} fl.</span>
+          <span class="t">${f.name}</span>
+          <span class="s">A condotta for the season. Risk of the field: ${Math.round(o.risk*100)}%.</span>
+          ${uc < 0.97 && top ? `<span class="undercut">${esc(top.name)} is underbidding you — rates are down.</span>` : ""}
+        </button>`;
+      }).join("");
+    }
+    h += `</section>`;
+  }
+  h += `<section class="sec"><div class="btnrow">
+      ${isWinter ? "" : `<button class="btn ghost" data-a="raid">Ride for composizione</button>`}
+      <button class="btn${isWinter?" primary":""}" data-a="rest">${isWinter?"Winter in place":"Rest this season"}</button>
+    </div></section>`;
+  h += `<section class="sec"><h2>The account</h2><div class="panel">${journalHTML(8)}</div></section>`;
+  return h;
+}
+
+function viewCompany(){
+  let h = `<section class="sec"><h2>Your lieutenants</h2>`;
+  const live = liveLts();
+  if(!live.length){
+    h += `<div class="empty">You have no lieutenants left alive. Nobody speaks for the men but you,
+      and that is worse than it sounds.</div>`;
+  } else {
+    h += live.map(l => {
+      const t = TRAITS.find(t => t.id === l.trait);
+      return `<div class="row flat"><span class="main">
+        <span class="t">${esc(ltName(l))}</span>
+        <span class="s">${t ? esc(t.note) : ""}</span></span>
+        <span class="end">skill ${l.skill}<br><span style="color:var(--dim)">loyal ${l.loyalty}</span></span></div>`;
+    }).join("");
+  }
+  h += `</section>`;
+
+  h += `<section class="sec"><h2>Investment in the company</h2>
+    <p class="lede">Permanent. Bought with the same florins the road home needs, which is the whole difficulty.</p>`;
+  h += INVESTMENTS.map(i => {
+    const owned = has(i.id);
+    const can = S.treasury >= i.cost;
+    return `<button class="row${owned?" owned":""}" ${owned?'data-a="noop"':`data-a="invest" data-v="${i.id}"`}${!owned&&!can?" disabled":""}>
+      <span class="main"><span class="t">${i.name}${owned?" — held":""}</span>
+      <span class="s">${i.note} <em style="color:var(--dim)">${i.effect}</em></span></span>
+      <span class="end">${owned ? "&#10003;" : `${fmt(i.cost)} fl.`}</span></button>`;
+  }).join("");
+  if(!affordableInvestments().length && S.investments.length < INVESTMENTS.length){
+    h += `<div class="empty">Nothing you can afford this season. The cheapest is
+      ${fmt(Math.min(...INVESTMENTS.filter(i=>!has(i.id)).map(i=>i.cost)))} fl.</div>`;
+  }
+  h += `</section>`;
+  return h;
+}
+
+function viewCaptain(){
+  const m = mods();
+  let h = `<section class="sec"><h2>${esc(S.captainName)}</h2>
+    <div class="bigbanner">${bannerHTML("capBanner", S.banner, 4)}</div>
+    <div class="btnrow"><button class="btn ghost sm" data-a="bannersheet">Change the banner</button></div></section>`;
+
+  h += `<section class="sec"><h2>Attributes</h2><div class="panel">`;
+  h += ATTRS.map(a => `<div class="attr"><span class="an">${a.name}<small>${a.note}</small></span>
+    <span class="pips">${"&#9679;".repeat(S.attrs[a.id])}${"&#9675;".repeat(ATTR_MAX - S.attrs[a.id])}</span></div>`).join("");
+  h += `</div></section>`;
+
+  h += `<section class="sec"><h2>Arms and finery</h2>
+    <p class="lede">What you wear is mostly who you are. It moves the numbers a little; it moves how you are spoken of a great deal.</p>`;
+  ["armour","horse","blade","wardrobe"].forEach(slot => {
+    const cur = kitOf(slot);
+    h += `<div class="row flat"><span class="main"><span class="t">${cur.name}</span>
+      <span class="s">${cur.note}</span></span>
+      <span class="end"><button class="btn ghost sm" data-a="kitsheet" data-v="${slot}">Change</button></span></div>`;
+  });
+  h += `</section>`;
+
+  h += `<section class="sec"><h2>What it all adds up to</h2><div class="panel">
+    <div class="kv"><span class="k">Road</span><span class="v">${DIFFICULTY[S.difficulty].name}</span></div>
+    <div class="kv"><span class="k">Terms offered</span><span class="v">&times;${m.pay.toFixed(2)}</span></div>
+    <div class="kv"><span class="k">Losses taken</span><span class="v">&times;${m.casualty.toFixed(2)}</span></div>
+    <div class="kv"><span class="k">Tribute taken</span><span class="v">&times;${m.take.toFixed(2)}</span></div>
+    <div class="kv"><span class="k">Reputation earned</span><span class="v">&times;${m.repGain.toFixed(2)}</span></div>
+    <div class="kv"><span class="k">Dread from finery</span><span class="v">+${m.dread}</span></div>
+    </div>
+    <p class="lede">These are the same figures the season is resolved with — not a separate estimate.</p></section>`;
+  return h;
+}
+
+function viewWorld(){
+  let h = `<section class="sec"><h2>Standing with the powers</h2><div class="panel">`;
+  h += FACTIONS.map(f => {
+    const v = S.reputation[f.id];
+    const pct = clamp((v+100)/2, 0, 100);
+    const col = v < 0 ? "var(--blood)" : "var(--gold)";
+    return `<div class="facnote"><div class="repline"><span class="f">${f.name}</span>
+      <span class="bar"><i style="left:${v<0?pct:50}%;width:${Math.abs(pct-50)}%;background:${col}"></i></span>
+      <span class="n ${v<0?"neg":v>20?"pos":""}">${Math.round(v)}</span></div>
+      ${f.note}</div>`;
+  }).join("");
+  h += `</div></section>`;
+
+  h += `<section class="sec"><h2>Other companies on the road</h2>`;
+  if(!S.rivals.length){
+    h += `<div class="empty">No other free company of note is working this country. That will not last.</div>`;
+  } else {
+    h += S.rivals.slice().sort((a,b)=>b.renown-a.renown).map(r =>
+      `<div class="row flat">${bannerHTML("riv_"+esc(r.seed), r.seed, 2, "rivbanner")}
+      <span class="main"><span class="t">${esc(r.name)}</span>
+      <span class="s">${esc(r.company)} — about ${fmt(r.strength)} lances</span></span>
+      <span class="end">renown<br>${Math.round(r.renown)}</span></div>`).join("");
+    if(undercutFactor() < 0.97){
+      h += `<p class="lede">Their reputation is pushing rates down across the country. Yours included.</p>`;
+    }
+  }
+  h += `</section>`;
+  return h;
+}
+
+function journalHTML(limit){
+  if(!S.journal.length) return `<div class="empty">Nothing written yet. The account starts when the first season does.</div>`;
+  const rows = S.journal.slice(0, limit||30)
+    .sort((a,b) => (b.turn - a.turn) || ((a.seq||0) - (b.seq||0)));
+  return `<div class="journal">${rows.map(j =>
+    `<div class="jrow ${j.kind}"><span class="w">${seasonOf(j.turn)} ${yearOf(j.turn)}</span>${esc(j.text)}</div>`).join("")}</div>`;
+}
+function viewAccount(){
+  const recent = S.ledger.slice(-14).reverse();
+  let h = `<section class="sec"><h2>The company's account</h2><div class="panel">${journalHTML(30)}</div></section>`;
+  h += `<section class="sec"><h2>The ledger</h2>`;
+  if(!recent.length) h += `<div class="empty">No entries yet.</div>`;
+  else h += `<div class="panel">${recent.map(r =>
+    `<div class="kv"><span class="k">${esc(r.item)}</span>
+     <span class="v ${r.in?"pos":"neg"}">${r.in?"+":"&minus;"}${fmt(r.in||r.out)}</span></div>`).join("")}</div>`;
+  h += `</section>`;
+  return h;
 }
 
 function render(){
   const app = $("#app");
-  if(!S){ app.innerHTML = viewTitle(); return; }
-  if(S.over){ app.innerHTML = viewOver(); return; }
-  const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
-  app.innerHTML =
-    '<div id="hud"><div class="hud-top">' +
-      '<div class="coname">'+esc(S.companyName)+'<small>Captain '+esc(S.captainName)+'</small></div>' +
-      '<div class="date"><b>'+seasonOf(S.turn)+'</b>'+yearOf(S.turn)+'</div>' +
-      '<button id="menuBtn" data-a="menu">&#9776;</button>' +
-    '</div><div class="chips">'+chipsHTML()+'</div></div>' +
-    '<main>' +
-      '<section class="sec"><h2>Standing with the powers</h2>'+repLineHTML()+'</section>' +
-      '<section class="sec"><h2>'+(isWinter?"Winter quarters":"This season's offers")+'</h2>' +
-        (isWinter ? '<p class="lede">No campaigning in winter. Rest, and let the ledger breathe.</p>' : offersHTML()) +
-      '</section>' +
-      '<section class="sec"><div class="btnrow">' +
-        (isWinter ? '' : '<button class="btn ghost" data-a="raid">Ride for composizione</button>') +
-        '<button class="btn'+(isWinter?' primary':'')+'" data-a="rest">'+(isWinter?"Winter in place":"Rest this season")+'</button>' +
-      '</div></section>' +
-      '<section class="sec"><h2>The company\'s account</h2><div class="panel"><div class="journal-wrap">'+journalHTML()+'</div></div></section>' +
-    '</main>';
+  if(!S){ app.innerHTML = viewTitle(); paintBanners(); return; }
+  if(S.over){ app.innerHTML = viewOver(); paintBanners(); return; }
+  const body = S.tab === "company" ? viewCompany()
+             : S.tab === "captain" ? viewCaptain()
+             : S.tab === "world"   ? viewWorld()
+             : S.tab === "account" ? viewAccount()
+             : viewField();
+  app.innerHTML = `
+    <div id="hud">
+      <div class="hud-top">
+        ${bannerHTML("hudBanner", S.banner, 2, "hud-banner")}
+        <div class="coname">${esc(S.companyName)}<small>Captain ${esc(S.captainName)}</small></div>
+        <div class="date"><b>${seasonOf(S.turn)}</b>${yearOf(S.turn)}</div>
+        <button id="menuBtn" data-a="menu">&#9776;</button>
+      </div>
+      <div class="chips">${chipsHTML()}</div>
+      <div id="nav">${navHTML()}</div>
+    </div>
+    <main>${body}</main>`;
+  paintBanners();
 }
 
 function viewTitle(){
   if(build){
-    return '<div class="title-wrap">' +
-      '<h1>The Company</h1>' +
-      '<p class="sub">Name your captain and choose how the company is built.</p>' +
-      '<input class="name" id="cname" placeholder="Captain\'s name" maxlength="30" value="'+esc(build.name||"")+'">' +
-      BUILDS.map(b => '<button class="build'+(build.pick===b.id?' sel':'')+'" data-a="pickbuild" data-v="'+b.id+'">' +
-        '<span class="t">'+b.name+'</span><span class="s">'+b.blurb+' &mdash; '+b.lances+' lances, '+fmt(b.treasury)+' fl.</span></button>').join("") +
-      '<div class="btnrow" style="margin-top:12px">' +
-        '<button class="btn ghost" data-a="titleback">Back</button>' +
-        '<button class="btn primary" data-a="startgame">Take the road</button>' +
-      '</div></div>';
+    if(build.step === 1){
+      return `<div class="title-wrap"><div class="step">Step 1 of 3 — the captain</div>
+        <h1>The Company</h1>
+        <input class="name" id="cname" placeholder="Your captain's name" maxlength="30" value="${esc(build.name||"")}">
+        ${BUILDS.map(b => `<button class="build${build.pick===b.id?" sel":""}" data-a="pickbuild" data-v="${b.id}">
+          <span class="t">${b.name}</span><span class="s">${b.blurb} &mdash; ${b.lances} lances, ${fmt(b.treasury)} fl.</span></button>`).join("")}
+        <div class="btnrow" style="margin-top:12px">
+          <button class="btn ghost" data-a="titleback">Back</button>
+          <button class="btn primary" data-a="step2">Next</button></div></div>`;
+    }
+    if(build.step === 2){
+      const spent = ATTRS.reduce((a,x) => a + (build.attrs[x.id] - ATTR_BASE), 0);
+      const left = ATTR_POINTS - spent;
+      return `<div class="title-wrap"><div class="step">Step 2 of 3 — the man himself</div>
+        <h1>${esc(build.name || "The Captain")}</h1>
+        <p class="sub">${left} point${left===1?"":"s"} left to place. These nudge the numbers; they mostly decide who you are.</p>
+        <div class="panel" style="text-align:left">
+        ${ATTRS.map(a => `<div class="attr"><span class="an">${a.name}<small>${a.note}</small></span>
+          <span class="pips">${"&#9679;".repeat(build.attrs[a.id])}${"&#9675;".repeat(ATTR_MAX-build.attrs[a.id])}</span>
+          <span class="end" style="display:flex;gap:5px">
+            <button class="btn ghost sm" data-a="attr-" data-v="${a.id}"${build.attrs[a.id]<=ATTR_BASE?" disabled":""}>&minus;</button>
+            <button class="btn ghost sm" data-a="attr+" data-v="${a.id}"${left<=0||build.attrs[a.id]>=ATTR_MAX?" disabled":""}>+</button>
+          </span></div>`).join("")}
+        </div>
+        <div class="btnrow" style="margin-top:12px">
+          <button class="btn ghost" data-a="step1">Back</button>
+          <button class="btn primary" data-a="step3">Next</button></div></div>`;
+    }
+    return `<div class="title-wrap"><div class="step">Step 3 of 3 — your banner</div>
+      <h1>Arms</h1>
+      <p class="sub">Choose a device, or roll for one. Your men will follow it; your enemies will learn it.</p>
+      <div class="bigbanner">${bannerHTML("bigPick", build.banner, 4)}</div>
+      <div class="btnrow" style="margin-bottom:10px">
+        <button class="btn gold" data-a="rollbanner">Roll a new one</button></div>
+      <div class="bannergrid">
+        ${BANNER_PRESETS.slice(0,12).map(seed =>
+          `<button class="bannerpick${build.banner===seed?" sel":""}" data-a="pickbanner" data-v="${seed}">
+            ${bannerHTML("pre_"+seed, seed, 2)}</button>`).join("")}
+      </div>
+      <div class="panel" style="text-align:left;margin-bottom:10px">
+        <div class="kv"><span class="k">Difficulty</span><span class="v">${DIFFICULTY[build.difficulty].name}</span></div>
+        <div class="lede" style="margin:6px 0 8px">${DIFFICULTY[build.difficulty].note}</div>
+        <div class="btnrow">${Object.keys(DIFFICULTY).map(k =>
+          `<button class="btn ghost sm${build.difficulty===k?" gold":""}" data-a="pickdiff" data-v="${k}">${DIFFICULTY[k].name}</button>`).join("")}</div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" data-a="step2">Back</button>
+        <button class="btn primary" data-a="startgame">Take the road</button></div></div>`;
   }
   const hasSave = !!localStorage.getItem(CONFIG.saveKey);
-  return '<div class="title-wrap">' +
-    '<h1>The Company</h1>' +
-    '<p class="sub">Italy, 1360s. Find work, hold your men together,<br>decide what your name is worth.</p>' +
-    (hasSave ? '<button class="btn primary" data-a="continue">Continue</button>' : '') +
-    '<button class="btn'+(hasSave?' ghost':' primary')+'" data-a="newco">A new company</button>' +
-    '<button class="btn ghost" data-a="slots" data-v="load">Load a saved company</button>' +
-  '</div>';
+  return `<div class="title-wrap">
+    <h1>The Company</h1>
+    <p class="sub">Italy, 1360s. Find work, hold your men together,<br>decide what your name is worth.</p>
+    ${hasSave ? `<button class="btn primary" data-a="continue">Continue</button>` : ""}
+    <button class="btn${hasSave?" ghost":" primary"}" data-a="newco">A new company</button>
+    <button class="btn ghost" data-a="slots" data-v="load">Load a saved company</button></div>`;
 }
 
 function viewOver(){
   const titles = {won:"A commission for life", mutiny:"The company is no more",
     coalition:"Run to ground", retired:"The road behind you"};
-  const cls = S.over.result === "won" || S.over.result === "retired" ? "" : "neg";
-  return '<div class="over"><h1 class="'+cls+'">'+titles[S.over.result]+'</h1>' +
-    '<p>'+esc(S.over.text)+'</p>' +
-    '<p class="lede">'+fmt(S.stat.seasons)+' seasons on the road. '+fmt(S.stat.contracts)+' contracts, '+
-      fmt(S.stat.raids)+' raids. Ended with '+fmt(S.treasury)+' florins and '+fmt(S.lances)+' lances.</p>' +
-    '<div class="btnrow"><button class="btn primary" data-a="newco">Start a new company</button></div></div>';
+  const good = S.over.result === "won" || S.over.result === "retired";
+  return `<div class="over">
+    <div class="bigbanner">${bannerHTML("overBanner", S.banner, 4)}</div>
+    <h1 class="${good?"":"neg"}">${titles[S.over.result]}</h1>
+    <p>${esc(S.over.text)}</p>
+    <p class="lede">${fmt(S.stat.seasons)} seasons on the road. ${fmt(S.stat.contracts)} contracts,
+      ${fmt(S.stat.raids)} raids, ${fmt(S.stat.incidents)} matters settled out of the saddle.
+      Ended with ${fmt(S.treasury)} florins and ${fmt(S.lances)} lances.</p>
+    <div class="btnrow"><button class="btn primary" data-a="newco">Start a new company</button></div></div>`;
 }
 
-/* -------------------------------------------------------------- sheets - */
+/* ------------------------------------------------------------- sheets - */
 function openSheet(fn){ sheetFn = fn; renderSheet(); }
 function closeSheet(){ sheetFn = null; renderSheet(); }
 function renderSheet(){
   let host = $("#sheetHost");
   if(!sheetFn){ if(host) host.remove(); return; }
-  const html = '<div class="scrim" data-a="scrim"><div class="sheet">'+sheetFn()+'</div></div>';
   if(!host){ host = document.createElement("div"); host.id = "sheetHost"; document.body.appendChild(host); }
-  host.innerHTML = html;
+  host.innerHTML = `<div class="scrim" data-a="scrim"><div class="sheet">${sheetFn()}</div></div>`;
+  paintBanners();
 }
 function sheetMenu(){
-  return '<h3>Menu</h3>' +
-    '<div class="btnrow" style="flex-direction:column">' +
-      '<button class="btn ghost" data-a="slots" data-v="save">Save to a slot</button>' +
-      '<button class="btn ghost" data-a="slots" data-v="load">Load from a slot</button>' +
-      '<button class="btn ghost" data-a="export">Copy company as text</button>' +
-      '<button class="btn ghost" data-a="import">Paste a company in</button>' +
-      '<button class="btn ghost" data-a="newco">Abandon and start new</button>' +
-      '<button class="btn" data-a="scrim">Close</button>' +
-    '</div>';
+  return `<h3>Menu</h3>
+    <div class="btnrow" style="flex-direction:column">
+      <button class="btn ghost" data-a="slots" data-v="save">Save to a slot</button>
+      <button class="btn ghost" data-a="slots" data-v="load">Load from a slot</button>
+      <button class="btn ghost" data-a="export">Copy company as text</button>
+      <button class="btn ghost" data-a="import">Paste a company in</button>
+      <button class="btn ghost" data-a="help">How this works</button>
+      <button class="btn ghost" data-a="newco">Abandon and start new</button>
+      <button class="btn" data-a="scrim">Close</button></div>`;
+}
+function sheetHelp(){
+  return `<h3>How this works</h3>
+    <p class="lede">One season is one turn. Four seasons to a year, ten years to a career.</p>
+    <div class="panel" style="margin-bottom:10px">
+      <div class="kv"><span class="k">Take a condotta</span><span class="v">steady pay, a real fight</span></div>
+      <div class="kv"><span class="k">Ride for composizione</span><span class="v">fast money, lasting enemies</span></div>
+      <div class="kv"><span class="k">Rest</span><span class="v">loyalty back, nothing earned</span></div>
+    </div>
+    <p class="lede"><b>Dread</b> gets you hired at better rates. <b>Honor</b> keeps the cities from
+    leaguing against you. Raiding buys the first and spends the second — that tension is the game.</p>
+    <p class="lede"><b>To win:</b> bank ${fmt(CONFIG.winTreasury)} florins <em>and</em> get one faction's
+    regard to ${CONFIG.winReputation}, after the twentieth season. Chasing the best rate every season is
+    safer; committing to one employer is how you actually get taken off the road.</p>
+    <p class="lede"><b>To lose:</b> loyalty reaching nothing, or two unpaid seasons with trust already
+    thin — the company splits. Or dread high and honor low for long enough that your enemies stop
+    fighting each other and come for you together.</p>
+    <div class="btnrow"><button class="btn" data-a="scrim">Close</button></div>`;
 }
 function sheetSlots(mode){
   const rows = [1,2,3].map(i => {
     const o = slotRead(i);
-    const info = o ? stateCard(o) : null;
-    return '<div class="slotrow"><span class="info">Slot '+i+' — '+
-      (info ? info.name+", "+info.when+", "+fmt(info.worth)+" fl." : "empty")+'</span>' +
-      '<button class="btn sm'+(mode==="save"?" primary":"")+'" data-a="slot-'+(mode==="save"?"put":"get")+'" data-v="'+i+'">' +
-      (mode==="save"?"Keep here":"Open") + '</button></div>';
+    const c = o ? stateCard(o) : null;
+    return `<div class="slotrow"><span class="info">Slot ${i} — ${c ? `${esc(c.name)}, ${c.when}, ${fmt(c.worth)} fl.` : "empty"}</span>
+      <button class="btn sm${mode==="save"?" primary":""}" data-a="slot-${mode==="save"?"put":"get"}" data-v="${i}"${mode==="load"&&!c?" disabled":""}>
+      ${mode==="save"?"Keep here":"Open"}</button></div>`;
   }).join("");
-  return '<h3>'+(mode==="save"?"Save to a slot":"Load from a slot")+'</h3>' + rows +
-    '<div class="btnrow" style="margin-top:12px"><button class="btn" data-a="scrim">Close</button></div>';
+  return `<h3>${mode==="save"?"Save to a slot":"Load from a slot"}</h3>${rows}
+    <div class="btnrow" style="margin-top:12px"><button class="btn" data-a="scrim">Close</button></div>`;
 }
 function sheetExport(){
-  return '<h3>Copy this company</h3><p class="lede">Paste this somewhere safe. Paste it back in on any device to continue.</p>' +
-    '<textarea class="blob" id="saveblob" readonly>'+exportText()+'</textarea>' +
-    '<div class="btnrow" style="margin-top:10px"><button class="btn primary" data-a="copyblob">Copy</button><button class="btn ghost" data-a="scrim">Close</button></div>';
+  return `<h3>Copy this company</h3><p class="lede">Paste this somewhere safe. Paste it back in on any device to continue.</p>
+    <textarea class="blob" id="saveblob" readonly>${exportText()}</textarea>
+    <div class="btnrow" style="margin-top:10px"><button class="btn primary" data-a="copyblob">Copy</button>
+    <button class="btn ghost" data-a="scrim">Close</button></div>`;
 }
 function sheetImport(){
-  return '<h3>Paste a company in</h3>' +
-    '<textarea class="blob" id="loadblob" placeholder="Paste the text here"></textarea>' +
-    '<div class="btnrow" style="margin-top:10px"><button class="btn primary" data-a="doimport">Open it</button><button class="btn ghost" data-a="scrim">Close</button></div>';
+  return `<h3>Paste a company in</h3>
+    <textarea class="blob" id="loadblob" placeholder="Paste the text here"></textarea>
+    <div class="btnrow" style="margin-top:10px"><button class="btn primary" data-a="doimport">Open it</button>
+    <button class="btn ghost" data-a="scrim">Close</button></div>`;
 }
-
+function sheetBanner(){
+  return `<h3>Your arms</h3><p class="lede">Roll until something looks like you.</p>
+    <div class="bigbanner">${bannerHTML("sheetBig", S.banner, 4)}</div>
+    <div class="btnrow" style="margin-bottom:10px"><button class="btn gold" data-a="rollbanner2">Roll a new one</button></div>
+    <div class="bannergrid">${BANNER_PRESETS.slice(0,12).map(seed =>
+      `<button class="bannerpick${S.banner===seed?" sel":""}" data-a="setbanner" data-v="${seed}">
+        ${bannerHTML("sp_"+seed, seed, 2)}</button>`).join("")}</div>
+    <div class="btnrow"><button class="btn" data-a="scrim">Done</button></div>`;
+}
+function sheetKit(slot){
+  const labels = {armour:"Harness", horse:"Horse", blade:"Blade", wardrobe:"Finery"};
+  return `<h3>${labels[slot]}</h3>
+    <p class="lede">Bought once, worn always. Small effects; large impressions.</p>
+    ${KIT[slot].map(k => {
+      const owned = S.kit[slot] === k.id;
+      const can = S.treasury >= k.cost;
+      return `<button class="row${owned?" owned":""}" data-a="buykit" data-v="${slot}:${k.id}"${owned||!can?" disabled":""}>
+        <span class="main"><span class="t">${k.name}${owned?" — worn":""}</span>
+        <span class="s">${k.note}${k.dread?` &middot; +${k.dread} dread`:""}${k.presence?` &middot; +${k.presence} presence`:""}</span></span>
+        <span class="end">${owned ? "&#10003;" : (k.cost ? `${fmt(k.cost)} fl.` : "—")}</span></button>`;
+    }).join("")}
+    <div class="btnrow"><button class="btn" data-a="scrim">Close</button></div>`;
+}
+function sheetIncident(){
+  const inc = pendingIncident;
+  if(!inc) return `<h3>Nothing pressing</h3><div class="btnrow"><button class="btn" data-a="scrim">Close</button></div>`;
+  return `<h3>${inc.title}</h3>
+    <p class="lede">${esc(fill(inc.text))}</p>
+    <div class="btnrow" style="flex-direction:column">
+      ${inc.choices.map((c,i) => {
+        const cant = c.cost && S.treasury < c.cost;
+        return `<button class="btn ghost" data-a="incident" data-v="${i}"${cant?" disabled":""}>${c.t}${cant?" — not enough":""}</button>`;
+      }).join("")}</div>`;
+}
 function toast(text){
   const host = $("#toastHost");
-  host.innerHTML = '<div class="toast show">'+esc(text)+'</div>';
-  setTimeout(() => { const t = host.querySelector(".toast"); if(t) t.classList.remove("show"); }, 1800);
+  host.innerHTML = `<div class="toast show">${esc(text)}</div>`;
+  setTimeout(() => { const t = host.querySelector(".toast"); if(t) t.classList.remove("show"); }, 2000);
 }
 
-/* --------------------------------------------------------------- wiring - */
+/* ------------------------------------------------------------ wiring - */
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-a]"); if(!t) return;
   const a = t.dataset.a, v = t.dataset.v;
   if(a === "scrim" && (e.target === t || t.tagName === "BUTTON")){ closeSheet(); return; }
+  if(t.disabled || a === "noop") return;
 
   const nameInput = $("#cname");
   if(nameInput && build) build.name = nameInput.value;
 
   switch(a){
-    case "newco": S = null; build = {name:"", pick:"balanced"}; render(); break;
+    case "newco":
+      S = null; closeSheet();
+      build = {step:1, name:"", pick:"balanced", banner:randomSeed(), difficulty:"captain",
+        attrs:Object.fromEntries(ATTRS.map(x => [x.id, ATTR_BASE]))};
+      render(); break;
     case "continue": if(load()) render(); else { toast("No company on this device."); render(); } break;
     case "titleback": build = null; render(); break;
     case "pickbuild": build.pick = v; render(); break;
+    case "step1": build.step = 1; render(); break;
+    case "step2": build.step = 2; render(); break;
+    case "step3": build.step = 3; render(); break;
+    case "attr+": {
+      const spent = ATTRS.reduce((acc,x) => acc + (build.attrs[x.id]-ATTR_BASE), 0);
+      if(spent < ATTR_POINTS && build.attrs[v] < ATTR_MAX) build.attrs[v]++;
+      render(); break; }
+    case "attr-": if(build.attrs[v] > ATTR_BASE) build.attrs[v]--; render(); break;
+    case "rollbanner": build.banner = randomSeed(); render(); break;
+    case "pickbanner": build.banner = v; render(); break;
+    case "pickdiff": build.difficulty = v; render(); break;
     case "startgame": {
-      const name = (build.name || "").trim() || "the Captain";
+      const name = (build.name||"").trim() || "the Captain";
       const b = BUILDS.find(x => x.id === build.pick) || BUILDS[0];
-      newGame(name, b); build = null; render();
-      break; }
+      newGame(name, b, build.attrs, build.banner, build.difficulty);
+      build = null; render(); break; }
+
+    case "go": S.tab = v; save(); render(); window.scrollTo(0,0); break;
     case "menu": openSheet(sheetMenu); break;
+    case "help": openSheet(sheetHelp); break;
     case "slots": openSheet(() => sheetSlots(v)); break;
     case "slot-put":
-      if(slotWrite(+v)){ toast("Kept in slot "+v+"."); closeSheet(); }
-      else toast("Could not save — storage is full.");
-      break;
+      if(slotWrite(+v)){ toast(`Kept in slot ${v}.`); closeSheet(); }
+      else toast("Could not save — storage is full."); break;
     case "slot-get": {
       const o = slotRead(+v);
       if(!o){ toast("Nothing kept there."); break; }
-      S = repair(o); save(); closeSheet(); render(); toast("Opened.");
-      break; }
+      S = o; save(); closeSheet(); render(); toast("Opened."); break; }
     case "export": openSheet(sheetExport); break;
     case "import": openSheet(sheetImport); break;
     case "copyblob": {
@@ -645,24 +1558,59 @@ document.addEventListener("click", e => {
       ta.select(); ta.setSelectionRange(0, ta.value.length);
       const done = () => toast("Copied.");
       if(navigator.clipboard && navigator.clipboard.writeText)
-        navigator.clipboard.writeText(ta.value).then(done, () => { try{ document.execCommand("copy"); done(); }catch(e){ toast("Copy it by hand — it is selected."); } });
-      else { try{ document.execCommand("copy"); done(); }catch(e){ toast("Copy it by hand — it is selected."); } }
+        navigator.clipboard.writeText(ta.value).then(done, () => { try{ document.execCommand("copy"); done(); }catch(err){ toast("Copy it by hand — it is selected."); } });
+      else { try{ document.execCommand("copy"); done(); }catch(err){ toast("Copy it by hand — it is selected."); } }
       break; }
     case "doimport": {
       const ta = $("#loadblob");
       const o = ta ? importText(ta.value) : null;
-      if(!o){ toast("That isn't a company this ledger recognizes."); break; }
-      S = o; save(); closeSheet(); render(); toast("Opened.");
-      break; }
+      if(!o){ toast("That is not a company this ledger recognises."); break; }
+      S = o; save(); closeSheet(); render(); toast("Opened."); break; }
+
+    case "bannersheet": openSheet(sheetBanner); break;
+    case "rollbanner2": S.banner = randomSeed(); save(); renderSheet(); render(); break;
+    case "setbanner": S.banner = v; save(); renderSheet(); render(); break;
+    case "kitsheet": openSheet(() => sheetKit(v)); break;
+    case "buykit": {
+      const [slot, id] = v.split(":");
+      const k = KIT[slot].find(x => x.id === id);
+      if(!k || S.treasury < k.cost) break;
+      if(k.cost) coin(-k.cost, k.name);
+      S.kit[slot] = id;
+      post("", `You took up ${k.name.charAt(0).toLowerCase()}${k.name.slice(1)}.`);
+      save(); closeSheet(); render(); toast("Worn."); break; }
+    case "invest": {
+      const i = invDef(v);
+      if(!i || has(v) || S.treasury < i.cost) break;
+      coin(-i.cost, i.name);
+      S.investments.push(v);
+      post("gold", `${i.name} — ${i.note}`);
+      save(); render(); toast(`${i.name} secured.`); break; }
+
+    case "incident": {
+      const inc = pendingIncident;
+      if(!inc) { closeSheet(); break; }
+      const c = inc.choices[+v];
+      if(!c) break;
+      if(c.cost && S.treasury < c.cost) break;
+      const outcome = c.fx(S);
+      S.stat.incidents++;
+      post("gold", typeof outcome === "string" ? fill(outcome) : inc.title);
+      pendingIncident = null;
+      save(); closeSheet(); render(); break; }
+
     case "contract": runSeason("contract", +v); break;
     case "raid": runSeason("raid"); break;
     case "rest": runSeason("rest"); break;
   }
 });
 
-/* ----------------------------------------------------------------- boot - */
+/* --------------------------------------------------------------- boot - */
 if(!load()) S = null;
 render();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 </script>
 </body>
 </html>
