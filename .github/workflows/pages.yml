@@ -1,8 +1,10 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
+  # Pages is configured to deploy from the main branch directly, so this
+  # workflow is not needed and would fail on every push if it auto-ran.
+  # Left here, manual-only, in case the GitHub Actions source is ever
+  # preferred over branch deployment.
   workflow_dispatch:
 
 permissions:
