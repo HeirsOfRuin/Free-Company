@@ -23,6 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        # Turns Pages on from the workflow itself using the pages: write
+        # permission above, rather than requiring someone to flip the repo
+        # setting by hand first.
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
