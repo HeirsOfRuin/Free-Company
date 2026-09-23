@@ -1,7 +1,7 @@
 /* The Company — offline shell.
    Bump CACHE whenever index.html changes substantially, or returning
    players keep the old page until their cache happens to revalidate. */
-const CACHE = "the-company-v1";
+const CACHE = "the-company-v2";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"

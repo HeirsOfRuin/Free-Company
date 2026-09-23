@@ -19,7 +19,7 @@ const path = require('path');
     function run(policy, preferred, invest){
       newGame('T', BUILDS[0], Object.fromEntries(ATTRS.map(a=>[a.id,2])), 'x', 'captain');
       let g = 0, battles = 0;
-      while(!S.over && g < 200){
+      while(!S.over && g < 320){
         g++;
         if(pendingIncident){ const c = pendingIncident.choices.find(c=>!c.cost||S.treasury>=c.cost);
           if(c) c.fx(S); pendingIncident=null; continue; }
@@ -63,7 +63,7 @@ const path = require('path');
       'mixed, no invest':   tally('any', null, false, 250)
     };
   });
-  console.log('FULL 40-SEASON RUNS through the shipped code, 250 each\n');
+  console.log('FULL-CAREER RUNS through the shipped code, 250 each\n');
   console.log('  policy'.padEnd(22)+'win%'.padStart(6)+'mutiny%'.padStart(9)+'coal%'.padStart(7)+'retire%'.padStart(9)+'battles'.padStart(9));
   for(const [k,v] of Object.entries(res))
     console.log('  '+k.padEnd(20)+String(v.win).padStart(6)+String(v.mutiny).padStart(9)+String(v.coalition).padStart(7)+String(v.retired).padStart(9)+String(v.battles).padStart(9));

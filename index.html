@@ -147,6 +147,36 @@ textarea.blob{width:100%;min-height:90px;background:var(--panel);border:1px soli
 .bigbanner{display:flex;justify-content:center;margin:6px 0 12px}
 .bigbanner canvas{width:96px;height:124px;border:1px solid var(--line)}
 
+.digest{border:1px solid var(--gold-dim,#6a5518);background:linear-gradient(180deg,#241F13,#1A1710);
+  border-radius:var(--r);padding:12px;margin-bottom:12px}
+.digest h3{font-size:14px;color:var(--gold-hi);margin-bottom:8px}
+.dgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px}
+.dcell{background:rgba(0,0,0,.25);border-radius:7px;padding:6px 8px}
+.dcell .k{display:block;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+.dcell .v{display:block;font-family:var(--f-num);font-size:14px;margin-top:2px}
+.dlines{font-size:12.5px;line-height:1.5}
+.dlines div{padding:3px 0;color:var(--muted)}
+.dlines div.good{color:var(--text)} .dlines div.bad{color:#D3A0A0} .dlines div.gold{color:var(--gold-hi)}
+
+.seasonhead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin:14px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.seasonhead .s{font-family:var(--f-disp);font-size:13px;color:var(--parchment)}
+.seasonhead .n{font-family:var(--f-num);font-size:11.5px;color:var(--dim)}
+
+.rprow{display:flex;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line-soft)}
+.rprow:last-child{border-bottom:0}
+.rprow .rn{width:16px;color:var(--dim);font-family:var(--f-num)}
+.rprow .ro{flex:1}
+.rprow .rl{font-family:var(--f-num);color:var(--muted);white-space:nowrap}
+
+.comp{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-soft)}
+.comp:last-child{border-bottom:0}
+.comp .cn{flex:1;font-size:13px}
+.comp .cn small{display:block;font-size:11px;color:var(--dim)}
+.comp .cv{width:44px;text-align:right;font-family:var(--f-num);font-size:13.5px;color:var(--gold-hi)}
+.compbar{height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden;margin:6px 0 10px;display:flex}
+.compbar i{display:block;height:100%}
+
 .tut,.hint{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 0 12px;border-radius:var(--r)}
 .tut{border:1px solid var(--gold-dim,#6a5518);background:linear-gradient(180deg,#2A2312,#1F1B12)}
 .hint{border:1px dashed var(--line);background:var(--panel)}
@@ -207,12 +237,16 @@ input.name{width:100%;padding:11px 13px;border-radius:var(--r);border:1px solid 
 const CONFIG = {
   seasonsPerYear: 4,
   startYear: 1361,
-  totalSeasons: 40,              // 10 years — the validated kill-gate horizon.
-                                 // Do not extend without rerunning the sim:
-                                 // 160 seasons pushed win rate ~1% -> ~23%.
-  winTreasury: 18000,
-  winReputation: 60,
-  winEligibleFromSeason: 20,
+  totalSeasons: 60,              // 15 years. Extending the career inflates the
+                                 // win rate on its own — treasury accumulates
+                                 // roughly linearly while reputation decays 2%
+                                 // a season — so the thresholds below were
+                                 // re-measured at this length, not carried
+                                 // over. Do not change it without doing the
+                                 // same: 160 seasons once took win ~1% -> ~23%.
+  winTreasury: 52000,
+  winReputation: 76,
+  winEligibleFromSeason: 30,
   maxLancesMult: 1.5,
   recruitCostPerLance: 13,
   recruitRateCap: 20,
@@ -250,6 +284,9 @@ const FACTIONS = [
    payBias:0.94, riskBias:0.90, loyaltyMemory:1.45}
 ];
 const facOf = id => FACTIONS.find(f => f.id === id);
+/* A name already ending in s takes a bare apostrophe: the Papal States' pay,
+   not the Papal States's pay. */
+function poss(name){ return /s$/i.test(name) ? name + "\u2019" : name + "\u2019s"; }
 
 const DIFFICULTY = {
   condottiere:{name:"Condottiere", note:"Rates are good and the field is kind. For learning the road.",
@@ -669,7 +706,7 @@ const INCIDENTS = [
   {id:"convoy", weight:3,
    when:s => s.underContract,
    title:"A pay convoy, lightly escorted",
-   text:"Word comes that {fac}'s own pay chest is two valleys away with thirty horse around it. It is not your money. It is very close.",
+   text:"Word comes that the pay chest of {fac} is two valleys away with thirty horse around it. It is not your money. It is very close.",
    choices:[
      {t:"Take it", fx:s => { const t=Math.round(rand(900,2200)); coin(t,"a stolen pay chest"); rep(s,s.underContract,-45); s.dread=Math.min(100,s.dread+12); s.honor=Math.max(0,s.honor-14);
        return `You took ${fmt(t)} florins that belonged to your own employer. They will work out who did it.`; }},
@@ -957,7 +994,7 @@ function makeRival(){
 
 function newGame(captainName, b, attrs, bannerSeed, difficulty){
   S = {
-    v: 4,
+    v: 5,
     captainName, companyName: `The Company of ${captainName}`,
     build: b.id, difficulty: difficulty || "captain",
     turn: 0,
@@ -977,7 +1014,9 @@ function newGame(captainName, b, attrs, bannerSeed, difficulty){
     campaign: null, siege: null, battle: null,
     negTreasuryStrikes: 0,
     tab: "field",
-    ledger: [], journal: [], journalSeq: 0,
+    ledger: [], journal: [], journalSeq: 0, reports: [], digest: null, snap: null,
+    recruitTarget: {maa:b.units.maa, arch:b.units.arch, inf:b.units.inf},
+    recruitPolicy: "steady",
     stat: {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0, incidents:0,
            townsTaken:0, saps:0, cleanPay:0, wonByOrder:{hold:0, volley:0, charge:0, refuse:0}},
     doctrine: {picked:[], tier:{}},
@@ -1047,7 +1086,15 @@ function migrate(o){
     o.tutorial = {step:0, done:true};
     o.v = 4;
   }
-  if(o.v !== 4) return null;
+  if(o.v === 4){
+    const bd = BUILDS.find(x => x.id === o.build) || BUILDS[0];
+    // An existing company keeps the shape it already is, not a default one.
+    o.recruitTarget = o.units ? Object.assign({}, o.units) : Object.assign({}, bd.units);
+    o.recruitPolicy = "steady";
+    o.reports = []; o.digest = null; o.snap = null;
+    o.v = 5;
+  }
+  if(o.v !== 5) return null;
   return repair(o);
 }
 function repair(o){
@@ -1067,6 +1114,14 @@ function repair(o){
     o.units = Object.assign({}, b.units);
   }
   if(!o.startUnits) o.startUnits = Object.assign({}, o.units);
+  if(!Array.isArray(o.reports)) o.reports = [];
+  if(o.digest === undefined) o.digest = null;
+  if(o.snap === undefined) o.snap = null;
+  if(!o.recruitTarget){
+    const bd = BUILDS.find(x => x.id === o.build) || BUILDS[0];
+    o.recruitTarget = Object.assign({}, o.units || bd.units);
+  }
+  if(!o.recruitPolicy) o.recruitPolicy = "steady";
   if(!o.doctrine) o.doctrine = {picked:[], tier:{}};
   if(!o.doctrine.tier) o.doctrine.tier = {};
   if(!Array.isArray(o.doctrine.picked)) o.doctrine.picked = [];
@@ -1231,7 +1286,7 @@ function addRecruits(units, n, weights){
 }
 /* Recruiting is priced by what you are actually buying back. */
 function recruitCostPer(){
-  const w = {maa:0.3, arch:0.35, inf:0.35};
+  const w = recruitTarget();
   return UNIT_IDS.reduce((a,k) => a + w[k]*UNITS[k].recruit, 0);
 }
 
@@ -1433,13 +1488,43 @@ function autoResolve(b){
   }
   return b.over;
 }
+/* Every fight files one of these — hand-fought, waved through, or a contract
+   season resolved out of sight. Built from the battle's own log rather than
+   recomputed, so a report cannot disagree with what actually happened. */
+function fileReport(b, faction, kind){
+  const before = {}; UNIT_IDS.forEach(k => { before[k] = b.us.units[k]; });
+  b.log.forEach(r => {});   // log already holds the per-round record
+  const rep = {
+    turn: S.turn,
+    kind,                                  // condotta | campaign | relief | coalition
+    faction: faction ? faction.short : null,
+    terrain: b.terrain,
+    foe: b.them.profile,
+    outcome: b.over,
+    rounds: b.log.map(r => ({
+      mine: r.myOrder, theirs: r.theirOrder,
+      myLost: Math.round(r.myLost), theirLost: Math.round(r.theirLost),
+      myMorale: Math.round(r.myMorale), theirMorale: Math.round(r.theirMorale)
+    })),
+    myLost: Math.round(b.log.reduce((a,r) => a + r.myLost, 0)),
+    theirLost: Math.round(b.log.reduce((a,r) => a + r.theirLost, 0)),
+  };
+  S.reports.unshift(rep);
+  if(S.reports.length > 12) S.reports.length = 12;
+  return rep;
+}
+
 /* Casualties are held on the battle object until it ends, then written back
    to the company once. One transfer, one place. */
 function commitBattle(b){
   UNIT_IDS.forEach(k => { S.units[k] = Math.max(0, b.us.units[k]); });
-  const lost = b.log.reduce((a,r) => a + r.myLost, 0);
+  return b.log.reduce((a,r) => a + r.myLost, 0);
+}
+/* Named separately, and called after the season has said what happened —
+   otherwise the account reads "X was killed" before it says there was a
+   battle at all. */
+function mournBattle(lost){
   if(lost > 0.10 * (strength() + lost)) hurtLieutenants(0.8); else hurtLieutenants(0.35);
-  return lost;
 }
 
 /* ------------------------------------------------------------ sieges - */
@@ -1586,42 +1671,53 @@ function hurtLieutenants(severity){
   });
 }
 
+/* A contract season used to be one dice roll with flavour text. It is now a
+   real battle, auto-resolved, through the same resolveRound() everything else
+   uses — so there is a genuine report to read rather than invented detail,
+   and there is no longer a second combat path to drift from the first. The
+   tactical screen still opens only for major fights; this one resolves
+   itself. */
 function resolveContract(offer){
   const f = facOf(offer.faction);
-  const m = mods();
   const pay = offer.payPerLance * strength();
-  const winChance = 0.4 + 0.4 * S.quality;
   S.underContract = f.id;
-  let heavyLoss = false, income;
 
-  if(Math.random() < winChance){
-    const plunder = pay * rand(0.2, 0.6);
-    const casualties = offer.risk * strength() * rand(0.3, 0.8) * m.casualty;
-    const decisive = plunder > pay * 0.42;
+  // The contract's risk sets how hard the opposition is.
+  const ratio = clamp(0.78 + offer.risk * 5.5, 0.78, 1.20);
+  const b = newBattle({ratio, kind:"contract", maxRounds:4});
+  autoResolve(b);
+  const lost = commitBattle(b);
+  const result = fileReport(b, f, "condotta");
+
+  let income, heavyLoss = lost > 0.10 * (strength() + lost);
+  if(b.over === "won"){
+    const plunder = pay * rand(0.18, 0.5) * mods().plunder;
+    income = pay + plunder;
     rep(S, f.id, rand(5,12) * f.loyaltyMemory);
     FACTIONS.forEach(o => { if(o.id !== f.id) S.reputation[o.id] -= rand(0,3); });
     S.honor = clamp(S.honor + 2, 0, 100);
-    applyLosses(S.units, casualties, ORDERS.hold.losses);
-    income = pay + plunder;
     coin(income, `condotta — ${f.short}`);
-    post("good", flavor(decisive ? "winBig" : "winNarrow", {fac:f.name}));
-    post("", `${fmt(pay)} in pay, ${fmt(plunder)} in plunder, ${fmt(casualties)} lances lost.`);
-    hurtLieutenants(0.4);
+    post("good", flavor(plunder > pay * 0.34 ? "winBig" : "winNarrow", {fac:f.name}));
     S.stat.wonBattles++;
+  } else if(b.over === "draw"){
+    // A field nobody took still gets paid for, but not well, and there is
+    // nothing on it worth carrying home.
+    income = pay * 0.6;
+    S.reputation[f.id] -= rand(1, 4);
+    coin(income, `condotta — ${f.short} (nothing decided)`);
+    post("", `A season under ${poss(f.name)} pay that settled nothing. Six tenths of the wage, no plunder, and an employer who expected a result.`);
   } else {
-    const casualties = offer.risk * strength() * rand(1.0, 2.2) * m.casualty;
-    heavyLoss = casualties > 0.10 * strength();
-    S.reputation[f.id] -= rand(3,8);
-    applyLosses(S.units, casualties, ORDERS.refuse.losses);
     income = pay * 0.5;
+    S.reputation[f.id] -= rand(3,8);
     coin(income, `condotta — ${f.short} (bad campaign)`);
     post("bad", flavor(heavyLoss ? "lossBad" : "lossNarrow", {fac:f.name}));
-    post("", `Half wage only — ${fmt(income)}. ${fmt(casualties)} lances lost.`);
-    hurtLieutenants(1.1);
     S.stat.lostBattles++;
   }
+  post("", `${TERRAIN[b.terrain].name} against ${PROFILES[b.them.profile].name}. ` +
+    `${fmt(income)} florins, ${fmt(lost)} lances lost.`);
+  mournBattle(lost);
   S.stat.contracts++;
-  return {heavyLoss, gotPlunder: income > pay};
+  return {heavyLoss, gotPlunder: b.over === "won"};
 }
 
 function resolveRaid(){
@@ -1674,16 +1770,50 @@ function updateLoyalty(paid, heavyLoss, gotPlunder){
   // The Articles are a floor, not a cure: they stop a slide, they do not lift.
   if(m.loyaltyFloor && S.loyalty < m.loyaltyFloor) S.loyalty = m.loyaltyFloor;
 }
+/* Recruiting fills toward the shape the captain asked for, rather than a
+   fixed mix he never chose. Composition decides which orders are even
+   available in a battle, so this is the lever that makes the war doctrines
+   reachable — a company with no archers cannot loose a volley however well
+   drilled it is. */
+const RECRUIT_POLICY = {
+  hold:       {name:"Hold what we have", note:"Spend nothing on new men.", rate:0,    buffer:800},
+  steady:     {name:"Steady",            note:"Replace losses as they come.", rate:1.0, buffer:800},
+  aggressive: {name:"Aggressive",        note:"Grow as fast as the money allows.", rate:2.0, buffer:400}
+};
+function recruitTarget(){
+  const t = (S.recruitTarget && S.recruitTarget.maa !== undefined) ? S.recruitTarget : null;
+  if(!t) return {maa:1/3, arch:1/3, inf:1/3};
+  const sum = UNIT_IDS.reduce((a,k) => a + Math.max(0, t[k]), 0) || 1;
+  const out = {}; UNIT_IDS.forEach(k => { out[k] = Math.max(0, t[k]) / sum; });
+  return out;
+}
+/* Weights for this season's intake: whichever types are furthest below the
+   target shape get bought first. */
+function recruitWeights(n){
+  const tgt = recruitTarget(), total = strength() + n;
+  const want = {}, deficit = {};
+  let dsum = 0;
+  UNIT_IDS.forEach(k => {
+    want[k] = tgt[k] * total;
+    deficit[k] = Math.max(0, want[k] - S.units[k]);
+    dsum += deficit[k];
+  });
+  if(dsum <= 0.001) return tgt;                 // already in shape: hold it
+  const w = {}; UNIT_IDS.forEach(k => { w[k] = deficit[k] / dsum; });
+  return w;
+}
 function recruit(){
+  const pol = RECRUIT_POLICY[S.recruitPolicy] || RECRUIT_POLICY.steady;
+  if(pol.rate <= 0) return;
   if(strength() >= maxLances()) return;
-  const spare = S.treasury - CONFIG.recruitTreasuryBuffer;
+  const spare = S.treasury - pol.buffer;
   if(spare <= 0) return;
   const per = recruitCostPer();
   const hole = Math.max(0, startStrength() - strength());
-  const cap = CONFIG.recruitRateCap + hole * 0.15;
+  const cap = (CONFIG.recruitRateCap + hole * 0.15) * pol.rate;
   const got = Math.max(0, Math.min(cap, spare/per, maxLances()-strength()));
   if(got < 1) return;
-  addRecruits(S.units, got);
+  addRecruits(S.units, got, recruitWeights(got));
   coin(-got * per, `recruitment, ${fmt(got)} lances`);
 }
 function applyForge(){
@@ -1741,8 +1871,44 @@ function maybeIncident(){
   return pick(bag);
 }
 
+function takeSnapshot(){
+  S.snap = {
+    turn: S.turn, treasury: S.treasury, strength: strength(),
+    units: Object.assign({}, S.units),
+    loyalty: S.loyalty, honor: S.honor, dread: effDread(),
+    rep: Object.assign({}, S.reputation),
+    journalSeq: S.journalSeq || 0
+  };
+}
+function buildDigest(){
+  const a = S.snap; if(!a) return null;
+  let bestFac = null, bestDelta = 0;
+  FACTIONS.forEach(f => {
+    const d = S.reputation[f.id] - (a.rep[f.id] || 0);
+    if(Math.abs(d) > Math.abs(bestDelta)){ bestDelta = d; bestFac = f; }
+  });
+  return {
+    turn: a.turn,
+    treasury: Math.round(S.treasury - a.treasury),
+    treasuryNow: Math.round(S.treasury),
+    strength: Math.round(strength() - a.strength),
+    strengthNow: Math.round(strength()),
+    loyalty: Math.round(S.loyalty - a.loyalty),
+    honor: Math.round(S.honor - a.honor),
+    dread: Math.round(effDread() - a.dread),
+    repFac: bestFac ? bestFac.short : null,
+    repDelta: Math.round(bestDelta),
+    // the lines this season actually wrote, in the order they happened
+    lines: S.journal.filter(j => (j.seq || 0) > a.journalSeq)
+                    .sort((x,y) => (x.seq||0) - (y.seq||0))
+                    .map(j => ({kind:j.kind, text:j.text})),
+    reports: S.reports.filter(r => r.turn === a.turn).length
+  };
+}
+
 function runSeason(action, offerIdx){
   const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
+  if(!S.snap || S.snap.turn !== S.turn) takeSnapshot();
   let result;
   if(action === "campaign") result = advanceCampaign();
   else if(action === "contract" && S.offers[offerIdx]){
@@ -1822,6 +1988,7 @@ function endBattle(){
   const lost = commitBattle(b);
   const c = S.campaign;
   const f = c ? facOf(c.faction) : null;
+  fileReport(b, f, b.kind === "relief" ? "relief" : b.kind === "coalition" ? "coalition" : "campaign");
   let result = {heavyLoss: lost > 0.10 * (strength() + lost), gotPlunder:false};
 
   if(b.over === "won"){
@@ -1842,6 +2009,7 @@ function endBattle(){
     S.loyalty = clamp(S.loyalty - 3, 0, 100);
     post("bad", `${TERRAIN[b.terrain].name}: you lost the field. ${fmt(lost)} lances, and the road back.`);
   }
+  mournBattle(lost);
   S.battle = null;
   if(c){ c.done++; if(c.done >= c.stages.length) completeCampaign(); }
   finishSeason(result);
@@ -1898,6 +2066,8 @@ function finishSeason(result){
   if(Math.random() < 0.18) post("", flavor("camp"));
 
   S.stat.seasons++;
+  S.digest = buildDigest();
+  S.snap = null;
   S.turn++;
 
   if(S.loyalty <= 0){
@@ -1955,7 +2125,7 @@ function affordableInvestments(){
 
 function viewField(){
   const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
-  let h = tutorialHTML("field");
+  let h = digestHTML() + tutorialHTML("field");
 
   /* Under contract for a campaign: that is the season's work, and the only
      other choice is to walk away from it. */
@@ -2038,6 +2208,7 @@ function viewCompany(){
   }
   h += `</section>`;
 
+  h += compositionHTML();
   h += doctrineHTML();
 
   h += `<section class="sec"><h2>Investment in the company</h2>
@@ -2054,6 +2225,38 @@ function viewCompany(){
     h += `<div class="empty">Nothing you can afford this season. The cheapest is
       ${fmt(Math.min(...INVESTMENTS.filter(i=>!has(i.id)).map(i=>i.cost)))} fl.</div>`;
   }
+  h += `</section>`;
+  return h;
+}
+
+/* The shape you want the company to be. Recruiting fills toward it every
+   season, so this is set once rather than decided every turn — and it is the
+   lever that decides which orders are open to you in a battle. */
+function compositionHTML(){
+  const tgt = recruitTarget();
+  const pol = RECRUIT_POLICY[S.recruitPolicy] || RECRUIT_POLICY.steady;
+  const now = strength() || 1;
+  let h = `<section class="sec"><h2>The shape of the company</h2>
+    <p class="lede">What you want it to be. New men are raised toward this each season.
+    It decides what you can do on a field: a company with no archers cannot loose a volley.</p>`;
+  h += `<div class="compbar">${UNIT_IDS.map(k =>
+    `<i style="width:${(S.units[k]/now*100).toFixed(1)}%;background:${UNIT_COLOUR[k]}"></i>`).join("")}</div>`;
+  h += `<div class="panel">`;
+  h += UNIT_IDS.map(k => {
+    const pct = Math.round(tgt[k] * 100);
+    const have = Math.round(S.units[k] / now * 100);
+    return `<div class="comp">
+      <span class="cn">${UNITS[k].name}<small>${have}% of the company now &middot; ${UNITS[k].upkeep} fl. upkeep</small></span>
+      <span class="cv">${pct}%</span>
+      <span style="display:flex;gap:5px">
+        <button class="btn ghost sm" data-a="tgt-" data-v="${k}">&minus;</button>
+        <button class="btn ghost sm" data-a="tgt+" data-v="${k}">+</button>
+      </span></div>`;
+  }).join("");
+  h += `</div>`;
+  h += `<p class="lede" style="margin-top:10px">Recruiting: <b>${pol.name}</b> — ${pol.note}</p>
+    <div class="btnrow">${Object.keys(RECRUIT_POLICY).map(k =>
+      `<button class="btn ghost sm${S.recruitPolicy===k?" gold":""}" data-a="policy" data-v="${k}">${RECRUIT_POLICY[k].name}</button>`).join("")}</div>`;
   h += `</section>`;
   return h;
 }
@@ -2227,6 +2430,74 @@ function viewWorld(){
   return h;
 }
 
+function sign(n){ return n > 0 ? "+" + fmt(n) : fmt(n); }
+function digestHTML(){
+  const d = S.digest;
+  if(!d || S.flags.noDigest) return "";
+  const cell = (k, v, cls) => `<div class="dcell"><span class="k">${k}</span><span class="v ${cls||""}">${v}</span></div>`;
+  const money = d.treasury >= 0 ? "pos" : "neg";
+  const str = d.strength >= 0 ? "pos" : "neg";
+  return `<div class="digest">
+    <h3>${seasonOf(d.turn)} ${yearOf(d.turn)} — what it came to</h3>
+    <div class="dgrid">
+      ${cell("Treasury", `${sign(d.treasury)}`, money)}
+      ${cell("Now in hand", fmt(d.treasuryNow))}
+      ${cell("Strength", `${sign(d.strength)}`, str)}
+      ${cell("Lances now", fmt(d.strengthNow))}
+      ${cell("Loyalty", sign(d.loyalty), d.loyalty >= 0 ? "pos" : "neg")}
+      ${d.repFac && d.repDelta ? cell(d.repFac, sign(d.repDelta), d.repDelta >= 0 ? "pos" : "neg")
+                               : cell("Honor", sign(d.honor), d.honor >= 0 ? "pos" : "neg")}
+    </div>
+    <div class="dlines">${d.lines.map(l => `<div class="${l.kind}">${esc(l.text)}</div>`).join("")}</div>
+    <div class="btnrow" style="margin-top:8px">
+      ${d.reports ? `<button class="btn ghost sm" data-a="reports">Read the report</button>` : ""}
+      <button class="btn ghost sm" data-a="digest-off">Stop showing this</button>
+      <button class="btn sm" data-a="digest-seen">Close</button>
+    </div></div>`;
+}
+
+/* The account, grouped by season rather than one undifferentiated stream. */
+function groupedJournalHTML(limit){
+  if(!S.journal.length) return `<div class="empty">Nothing written yet. The account starts when the first season does.</div>`;
+  const rows = S.journal.slice(0, limit || 60)
+    .sort((a,b) => (b.turn - a.turn) || ((a.seq||0) - (b.seq||0)));
+  let out = "", lastTurn = null;
+  rows.forEach(j => {
+    if(j.turn !== lastTurn){
+      lastTurn = j.turn;
+      const rp = S.reports.filter(r => r.turn === j.turn).length;
+      out += `<div class="seasonhead"><span class="s">${seasonOf(j.turn)} ${yearOf(j.turn)}</span>` +
+             `<span class="n">${rp ? rp + (rp === 1 ? " field" : " fields") : ""}</span></div>`;
+    }
+    out += `<div class="jrow ${j.kind}">${esc(j.text)}</div>`;
+  });
+  return `<div class="journal">${out}</div>`;
+}
+
+function reportHTML(r){
+  const f = r.faction ? ` for ${r.faction}` : "";
+  const verdict = r.outcome === "won" ? "The field was yours."
+                : r.outcome === "draw" ? "Neither side could hold it."
+                : "You lost the field.";
+  return `<div class="panel" style="margin-bottom:10px">
+    <div class="kv"><span class="k">${seasonOf(r.turn)} ${yearOf(r.turn)}${f}</span>
+      <span class="v ${r.outcome === "won" ? "pos" : r.outcome === "lost" ? "neg" : ""}">${verdict}</span></div>
+    <p class="lede" style="margin:6px 0">${TERRAIN[r.terrain].name} against ${PROFILES[r.foe].name}.
+      ${fmt(r.myLost)} lost, ${fmt(r.theirLost)} of theirs.</p>
+    ${r.rounds.map((rd,i) => `<div class="rprow"><span class="rn">${i+1}</span>
+      <span class="ro">You ${ORDERS[rd.mine].verb}; they ${ORDERS[rd.theirs].verb}.</span>
+      <span class="rl">&minus;${fmt(rd.myLost)} / &minus;${fmt(rd.theirLost)}</span></div>`).join("")}
+  </div>`;
+}
+function sheetReports(){
+  if(!S.reports.length) return `<h3>Reports</h3><div class="empty">No fighting yet.</div>
+    <div class="btnrow"><button class="btn" data-a="scrim">Close</button></div>`;
+  return `<h3>What happened in the field</h3>
+    <p class="lede">Every fight, including the ones you did not command yourself.</p>
+    ${S.reports.slice(0,6).map(reportHTML).join("")}
+    <div class="btnrow"><button class="btn" data-a="scrim">Close</button></div>`;
+}
+
 function journalHTML(limit){
   if(!S.journal.length) return `<div class="empty">Nothing written yet. The account starts when the first season does.</div>`;
   const rows = S.journal.slice(0, limit||30)
@@ -2236,8 +2507,11 @@ function journalHTML(limit){
 }
 function viewAccount(){
   const recent = S.ledger.slice(-14).reverse();
-  let h = hint("account", "Everything that happened to the company, in order, with the money underneath it.");
-  h += `<section class="sec"><h2>The company's account</h2><div class="panel">${journalHTML(30)}</div></section>`;
+  let h = hint("account", "Everything that happened to the company, grouped by season, with the money underneath it.");
+  h += `<section class="sec"><div class="btnrow" style="margin-bottom:6px">
+      <button class="btn ghost sm" data-a="reports">Field reports${S.reports.length ? ` (${S.reports.length})` : ""}</button>
+    </div></section>`;
+  h += `<section class="sec"><h2>The company's account</h2><div class="panel">${groupedJournalHTML(60)}</div></section>`;
   h += `<section class="sec"><h2>The ledger</h2>`;
   if(!recent.length) h += `<div class="empty">No entries yet.</div>`;
   else h += `<div class="panel">${recent.map(r =>
@@ -2631,6 +2905,26 @@ document.addEventListener("click", e => {
       post("gold", `${d.name}, step ${t+1}: ${d.steps[t]}`);
       save(); render(); toast(`${d.name} — step ${t+1}.`);
       break; }
+    case "digest-seen": S.digest = null; save(); render(); break;
+    case "digest-off": S.flags.noDigest = true; S.digest = null; save(); render();
+      toast("The season summary is off. The account tab still has it all."); break;
+    case "reports": openSheet(sheetReports); break;
+    case "tgt+": case "tgt-": {
+      const step = a === "tgt+" ? 5 : -5;
+      const cur = {}; const tot = UNIT_IDS.reduce((x,k) => x + Math.max(0, S.recruitTarget[k]), 0) || 1;
+      UNIT_IDS.forEach(k => { cur[k] = Math.round(Math.max(0, S.recruitTarget[k]) / tot * 100); });
+      const next = clamp(cur[v] + step, 0, 100);
+      if(next === cur[v]) break;
+      // take the change out of (or give it to) the others, proportionally
+      const others = UNIT_IDS.filter(k => k !== v);
+      const osum = others.reduce((x,k) => x + cur[k], 0);
+      const delta = next - cur[v];
+      cur[v] = next;
+      if(osum > 0) others.forEach(k => { cur[k] = Math.max(0, cur[k] - delta * (cur[k]/osum)); });
+      else others.forEach(k => { cur[k] = Math.max(0, -delta / others.length); });
+      S.recruitTarget = cur;
+      save(); render(); break; }
+    case "policy": S.recruitPolicy = v; save(); render(); break;
     case "invest": {
       const i = invDef(v);
       if(!i || has(v) || S.treasury < i.cost) break;

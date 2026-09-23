@@ -356,6 +356,96 @@ refuse 11% — varied rather than one-note.
   escaped, so entities do not work there) and the rival-undercut warning
   repeated on every single offer instead of stated once.
 
+---
+
+# Built — Stage 4: what playing it actually showed
+
+Josh played a full career and came back with four things. All four were real.
+
+## The career is fifteen years
+
+`totalSeasons` 40 → 60, eligibility from season 30. Extending a career
+inflates the win rate on its own — treasury accumulates roughly linearly
+while reputation decays 2% a season — and it did: **49.6% at 15 years against
+13.2% at 10**, measured before any threshold moved. Gates re-measured rather
+than carried over: treasury 18,000 → **52,000**, reputation 60 → **76**.
+
+## One resolver for all fighting
+
+"A report for every fight" could not be faked for contract seasons, because
+contract fighting was never a battle — it was a single dice roll
+(`0.4 + 0.4 × quality`) with flavour text. There was no detail to surface,
+only detail to invent.
+
+So contract seasons now run a real battle through the same `resolveRound()`
+as everything else, auto-resolved in four rounds. **The dual combat path is
+gone.** Every fight — hand-fought, waved through, or resolved out of sight —
+files a report built from the battle's own log, so a report cannot disagree
+with what happened. Verified: reports exist for both `condotta` and
+`campaign` kinds, and no fight completes without one.
+
+The tactical screen still opens only for campaign battles, siege relief and
+the coalition. The point was a report to read, not sixty battles to fight.
+
+## You choose the shape of the company
+
+Recruiting fills toward a target you set — three steppers and a spending
+policy — instead of a hard-coded 30/35/35 mix nobody chose. It is set once,
+not decided every season, and it matters: composition decides which orders
+are open to you, since a company with no archers cannot loose a volley
+however well drilled.
+
+Measured over full careers: an archer-heavy target lands at 70% archers, a
+lance-heavy one at 73% men-at-arms, a cheap-mass one at 70% brigands.
+
+## A season is legible now
+
+A digest card after each season: money in and out, strength, loyalty,
+standing, and the narrative beneath it. **Its figures are asserted to equal
+the real state change** — the card diffs two snapshots rather than estimating.
+The account below is grouped by season with headers instead of one
+undifferentiated stream, and field reports are tappable from it.
+
+## Balance after Stage 4
+
+Measured over 200 full 15-year careers per policy:
+
+| Policy | Win | Money gate | Reputation gate |
+|---|---|---|---|
+| Mixed, best rate | 9.0% | 33% | 15% |
+| Loyal to Florence | 8.5% | 18% | 23% |
+| Loyal to Pisa | 1.0% | 2% | 13% |
+| No investments | 0.0% | 3% | 0% |
+
+**The headline relationship changed, and this is an honest correction.**
+Loyalty no longer beats rate-chasing — they **tie**. Florence clears the
+reputation gate far more often (23% vs 15%) and the money gate far less (18%
+vs 33%), because it pays under the market. Two routes to the same place
+rather than one best one. Which employer you commit to still decides
+everything: Pisa is 1%.
+
+A separate finding: **strict loyalty is suicide.** A policy that refuses all
+other work when its employer is not hiring mutinies **77%** of the time —
+roughly 40% of seasons with no income bankrupts the company. The viable loyal
+play is preference with fallback, not purity.
+
+## What measurement caught, and one thing it didn't
+
+- **A drawn field was reputation-neutral**, which quietly removed most of the
+  downward pressure on reputation: the old contract roll penalised standing on
+  every loss (40% of seasons), while draws absorbed ~30% of outcomes and cost
+  nothing. Average peak reputation had jumped from ~28 to ~43 before this was
+  found.
+- **Sample size nearly fooled me.** At 70 runs the same configuration read
+  21.4% and then 11.4% win. Anything below ~200 runs at this career length is
+  noise, and two of the ordering conclusions drawn at 70 were wrong.
+- **A phone screenshot** caught the dead being named before the narration that
+  explains them — the same backwards-ordering bug fixed in Stage 1,
+  reintroduced because casualties committed before the outcome posted.
+- **Not a code bug at all:** a long "hang" that looked like an infinite loop
+  was orphaned measurement processes of my own, at load average 27. Check the
+  machine before the code.
+
 ## Still not built
 
 No naval or river actions, no multi-company alliances, and the captain does
