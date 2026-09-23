@@ -147,6 +147,13 @@ textarea.blob{width:100%;min-height:90px;background:var(--panel);border:1px soli
 .bigbanner{display:flex;justify-content:center;margin:6px 0 12px}
 .bigbanner canvas{width:96px;height:124px;border:1px solid var(--line)}
 
+.tut,.hint{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 0 12px;border-radius:var(--r)}
+.tut{border:1px solid var(--gold-dim,#6a5518);background:linear-gradient(180deg,#2A2312,#1F1B12)}
+.hint{border:1px dashed var(--line);background:var(--panel)}
+.tut .main,.hint .main{flex:1;font-size:12.5px;line-height:1.5}
+.tut .main{color:var(--parchment)}
+.hint .main{color:var(--muted)}
+
 .bfwrap{display:flex;justify-content:center}
 .battlefield{width:100%;max-width:344px;height:auto;border:1px solid var(--line);border-radius:6px}
 .camp-strip{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:10px;
@@ -203,7 +210,7 @@ const CONFIG = {
   totalSeasons: 40,              // 10 years — the validated kill-gate horizon.
                                  // Do not extend without rerunning the sim:
                                  // 160 seasons pushed win rate ~1% -> ~23%.
-  winTreasury: 11000,
+  winTreasury: 18000,
   winReputation: 60,
   winEligibleFromSeason: 20,
   maxLancesMult: 1.5,
@@ -318,7 +325,11 @@ const ORDERS = {
     line:"Horse, at speed, at whatever is in front. Decisive or ruinous.",
     power: u => u.maa*1.50 + u.arch*0.50 + u.inf*0.30,
     losses:{maa:0.60, arch:0.20, inf:0.20}, defence:1.30, moraleSelf:0,
-    need:(u,t) => frac(u,"maa") >= 0.20 && TERRAIN[t].charge >= 0.75,
+    need:(u,t,b,doc) => {
+      let tm = TERRAIN[t].charge;
+      if(doc && doc.chargeSoften && tm < 1) tm = tm + (1 - tm) * doc.chargeSoften;
+      return frac(u,"maa") >= 0.20 && tm >= 0.75;
+    },
     why:"Needs a fifth of the company in men-at-arms, and ground a horse can cross."
   },
   refuse: {
@@ -407,6 +418,61 @@ const INVESTMENTS = [
    note:"A walled town that will have you back each winter.", effect:"Rest restores more, and pays a garrison fee."}
 ];
 const invDef = id => INVESTMENTS.find(i => i.id === id);
+
+/* ---------------------------------------------------------- doctrine -
+   Investments are facilities you buy. Doctrine is what the company trains
+   at, and what it becomes known for. Two are chosen, permanently, out of
+   eight, and each advances in three steps that cost money AND proof that
+   you actually fight that way — a longbow company earns its second step by
+   winning fields with the bow, not by paying for one.
+
+   None of these duplicate an investment's effect. */
+const DOCTRINE_MAX = 3;
+const DOCTRINE_PICKS = 2;
+const DOCTRINE_COST = [700, 1400, 2600];
+
+const DOCTRINES = [
+  {id:"volley", name:"The Volley", kind:"war", order:"volley",
+   note:"Bowmen drilled until loosing in rhythm is the thing they do without being told.",
+   steps:["Archers shoot faster and truer.","The rhythm holds under pressure.","Nobody in Italy shoots like your company."],
+   proofLabel:"fields won having loosed a volley", proof:s => s.stat.wonByOrder.volley, need:[0,3,6]},
+  {id:"hold", name:"The Braced Line", kind:"war", order:"hold",
+   note:"Men-at-arms afoot, shoulder to shoulder, who have practised standing still while horse comes at them.",
+   steps:["The line forms faster and holds longer.","It does not bend where others break.","It has never yet been broken."],
+   proofLabel:"fields won having held the line", proof:s => s.stat.wonByOrder.hold, need:[0,3,6]},
+  {id:"charge", name:"The Charge", kind:"war", order:"charge",
+   note:"Horse trained to go in together and keep going, over ground other companies will not attempt.",
+   steps:["The charge lands heavier.","It lands heavier still.","Broken country no longer stops it."],
+   proofLabel:"fields won having charged", proof:s => s.stat.wonByOrder.charge, need:[0,3,6]},
+
+  {id:"guastatori", name:"Guastatori", kind:"company",
+   note:"Miners, carpenters and men who know what a wall is made of.",
+   steps:["Saps go in faster and cost less.","Walls come down in bigger spans.","An assault through your own breach is a far safer thing."],
+   proofLabel:"towns taken and saps dug", proof:s => s.stat.townsTaken + s.stat.saps, need:[0,2,5]},
+  {id:"corridori", name:"Corridori", kind:"company",
+   note:"Outriders who are over the next hill before anyone has asked them to be.",
+   steps:["Tribute rides bring back more.","You see the ground before you commit to it.","You see who you are facing, too."],
+   proofLabel:"tribute rides", proof:s => s.stat.raids, need:[0,2,5]},
+  {id:"articles", name:"The Articles", kind:"company",
+   note:"Written terms every man signs: shares, punishments, and what is owed when.",
+   steps:["The company steadies under fire.","It steadies a great deal more.","It does not come apart, whatever the season brings."],
+   proofLabel:"seasons running with wages paid in full", proof:s => s.stat.cleanPay, need:[0,6,14]},
+  {id:"chancery", name:"The Chancery", kind:"company",
+   note:"A notary, a clerk, and a captain who reads what he signs.",
+   steps:["Terms come in a little better.","They come in markedly better.","Nobody drafts a condotta past you."],
+   proofLabel:"contracts and campaigns completed", proof:s => s.stat.contracts, need:[0,5,12]},
+  {id:"booty", name:"Ransom and Booty", kind:"company",
+   note:"A company that knows what a prisoner is worth, and who to sell him back to.",
+   steps:["More comes off a won field.","Rather more.","Nothing of value leaves a field you hold."],
+   proofLabel:"fields won and towns sacked", proof:s => s.stat.wonBattles + s.stat.townsTaken, need:[0,4,9]}
+];
+const docDef = id => DOCTRINES.find(d => d.id === id);
+/* Tier held in a doctrine, 0 if not taken. One reader. */
+function docTier(id){ return (S.doctrine && S.doctrine.tier[id]) || 0; }
+function docPicked(id){ return !!(S.doctrine && S.doctrine.picked.includes(id)); }
+/* The multiplier a war doctrine gives its own order. Applies to the player
+   only — see battleDoctrine(). */
+const DOCTRINE_ORDER_MULT = [1.00, 1.06, 1.12, 1.20];
 
 /* ------------------------------------------------------- name tables - */
 const FIRST = ["Giovanni","Ambrogio","Niccolò","Bartolomeo","Guido","Ercole","Taddeo","Rinaldo",
@@ -891,7 +957,7 @@ function makeRival(){
 
 function newGame(captainName, b, attrs, bannerSeed, difficulty){
   S = {
-    v: 3,
+    v: 4,
     captainName, companyName: `The Company of ${captainName}`,
     build: b.id, difficulty: difficulty || "captain",
     turn: 0,
@@ -912,7 +978,10 @@ function newGame(captainName, b, attrs, bannerSeed, difficulty){
     negTreasuryStrikes: 0,
     tab: "field",
     ledger: [], journal: [], journalSeq: 0,
-    stat: {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0, incidents:0},
+    stat: {seasons:0, contracts:0, raids:0, wonBattles:0, lostBattles:0, incidents:0,
+           townsTaken:0, saps:0, cleanPay:0, wonByOrder:{hold:0, volley:0, charge:0, refuse:0}},
+    doctrine: {picked:[], tier:{}},
+    seen: {}, tutorial: {step:0, done:false},
     over: null, flags: {}
   };
   rollOffers();
@@ -970,7 +1039,15 @@ function migrate(o){
     o.campaign = null; o.siege = null; o.battle = null;
     o.v = 3;
   }
-  if(o.v !== 3) return null;
+  if(o.v === 3){
+    o.doctrine = {picked:[], tier:{}};
+    o.seen = {};
+    /* An existing company has been on the road for years; it does not get
+       walked through its first season. */
+    o.tutorial = {step:0, done:true};
+    o.v = 4;
+  }
+  if(o.v !== 4) return null;
   return repair(o);
 }
 function repair(o){
@@ -990,6 +1067,15 @@ function repair(o){
     o.units = Object.assign({}, b.units);
   }
   if(!o.startUnits) o.startUnits = Object.assign({}, o.units);
+  if(!o.doctrine) o.doctrine = {picked:[], tier:{}};
+  if(!o.doctrine.tier) o.doctrine.tier = {};
+  if(!Array.isArray(o.doctrine.picked)) o.doctrine.picked = [];
+  if(!o.seen) o.seen = {};
+  if(!o.tutorial) o.tutorial = {step:0, done:true};
+  if(!o.stat.wonByOrder) o.stat.wonByOrder = {hold:0, volley:0, charge:0, refuse:0};
+  if(o.stat.townsTaken === undefined) o.stat.townsTaken = 0;
+  if(o.stat.saps === undefined) o.stat.saps = 0;
+  if(o.stat.cleanPay === undefined) o.stat.cleanPay = 0;
   if(o.campaign === undefined) o.campaign = null;
   if(o.siege === undefined) o.siege = null;
   if(o.battle === undefined) o.battle = null;
@@ -1074,16 +1160,30 @@ function kitPresence(){
 function mods(){
   const d = DIFFICULTY[S.difficulty] || DIFFICULTY.captain;
   const a = S.attrs;
+  const dCorr = docTier("corridori"), dChan = docTier("chancery"),
+        dArt  = docTier("articles"),  dBoot = docTier("booty"),
+        dGua  = docTier("guastatori");
   return {
     // Presence and finery improve the terms you are offered.
-    pay: d.pay * (1 + 0.02 * (a.presence - ATTR_BASE)) * (1 + 0.01 * kitPresence()),
+    pay: d.pay * (1 + 0.02 * (a.presence - ATTR_BASE)) * (1 + 0.01 * kitPresence())
+         * (1 + 0.05 * dChan),
     risk: d.risk,
     // Command keeps men alive; a surgeon and a baggage train do more.
     casualty: (1 - 0.02 * (a.command - ATTR_BASE))
               * (has("baggage") ? 0.85 : 1)
               * (has("surgeon") ? 0.75 : 1),
     // Cunning makes a town pay more to be left alone.
-    take: 1 + 0.03 * (a.cunning - ATTR_BASE),
+    take: (1 + 0.03 * (a.cunning - ATTR_BASE)) * (1 + 0.13 * dCorr),
+    // Doctrine, all of it derived here so nothing reads a bonus twice.
+    plunder: 1 + 0.15 * dBoot,
+    battleMorale: 4 * dArt,
+    loyaltyFloor: dArt >= 2 ? 12 : 0,
+    breakCost: 1 - 0.15 * dChan,
+    sapWall: 1 + 0.20 * dGua,
+    sapCost: 1 - 0.18 * dGua,
+    assaultOdds: 0.06 * dGua,
+    scoutGround: dCorr >= 2,
+    scoutFoe: dCorr >= 3,
     repGain: has("herald") ? 1.30 : 1.00,
     wageLoyaltyHit: has("paymaster") ? 8 : 15,
     restLoyalty: has("quarters") ? 12 : 8,
@@ -1151,25 +1251,46 @@ function maxLances(){ return startStrength() * CONFIG.maxLancesMult; }
    click by click, a battle waved through with "let them handle it", and a
    battle run ten thousand times by a measurement harness. There is no
    second path and therefore nothing to drift. */
-function orderAvailable(id, units, terrainId, battle){
+/* What the PLAYER's doctrine does in a battle. This is deliberately a
+   separate object passed into the resolver rather than something baked into
+   orderEffect: orderEffect is called for both sides, and for the enemy AI's
+   own evaluation, so a multiplier hidden inside it would silently buff the
+   opponent. Nothing here is ever passed for b.them. */
+function battleDoctrine(){
+  const mult = {hold:1, volley:1, charge:1, refuse:1};
+  const defence = {hold:1, volley:1, charge:1, refuse:1};
+  let chargeSoften = 0;
+  ["volley","hold","charge"].forEach(id => {
+    const t = docTier(id);
+    if(t > 0) mult[id] = DOCTRINE_ORDER_MULT[t];
+    if(t >= DOCTRINE_MAX){
+      if(id === "charge") chargeSoften = 0.35;  // broken country stops stopping you
+      else defence[id] = 0.85;                  // and the drilled take fewer losses
+    }
+  });
+  return {mult, defence, chargeSoften};
+}
+function orderAvailable(id, units, terrainId, battle, doc){
   const o = ORDERS[id];
   if(!o) return false;
-  return !!o.need(units, terrainId, battle);
+  return !!o.need(units, terrainId, battle, doc);
 }
-function availableOrders(units, terrainId, battle){
-  return ORDER_IDS.filter(id => orderAvailable(id, units, terrainId, battle));
+function availableOrders(units, terrainId, battle, doc){
+  return ORDER_IDS.filter(id => orderAvailable(id, units, terrainId, battle, doc));
 }
 /* Effectiveness of one side this round. The number the UI shows the player
    and the number the resolver consumes are this same call. */
-function orderEffect(units, orderId, terrainId, morale, committed){
+function orderEffect(units, orderId, terrainId, morale, committed, doc){
   const o = ORDERS[orderId];
-  const tm = TERRAIN[terrainId][orderId];
+  let tm = TERRAIN[terrainId][orderId];
   if(typeof tm !== "number" || !isFinite(tm)){
     console.error("no terrain multiplier for", orderId, "on", terrainId);
     return 0;
   }
+  // Charge III: bad ground stops being bad. Player side only.
+  if(doc && doc.chargeSoften && orderId === "charge" && tm < 1) tm = tm + (1 - tm) * doc.chargeSoften;
   const raw = o.power(units);
-  const v = raw * tm * (1 + morale/200) * (committed ? 1.5 : 1);
+  const v = raw * tm * (1 + morale/200) * (committed ? 1.5 : 1) * (doc ? doc.mult[orderId] : 1);
   return isFinite(v) ? v : 0;
 }
 function makeEnemy(strengthTarget, profileId, seed){
@@ -1184,12 +1305,12 @@ function makeEnemy(strengthTarget, profileId, seed){
            banner: seed || randomSeed(), committed:false, name:p.name };
 }
 function startMorale(){
-  return clamp(Math.round(45 + 0.30*S.loyalty + 20*S.quality), 20, 100);
+  return clamp(Math.round(45 + 0.30*S.loyalty + 20*S.quality + mods().battleMorale), 20, 100);
 }
 function newBattle(opts){
   opts = opts || {};
   const terrain = opts.terrain || pick(TERRAIN_IDS);
-  const ratio = opts.ratio || rand(1.00, 1.35);
+  const ratio = opts.ratio || rand(0.85, 1.10);
   const profile = opts.profile || pick(Object.keys(PROFILES));
   return {
     terrain, round:1, maxRounds: opts.maxRounds || 6,
@@ -1230,7 +1351,12 @@ function resolveRound(b, myOrder){
   const myCommit = b.us.committed, theirCommit = b.them.committed;
   b.us.committed = false; b.them.committed = false;
 
-  const myEff = orderEffect(b.us.units, myOrder, b.terrain, b.us.morale, myCommit)
+  const doc = battleDoctrine();
+  const countered = COUNTER[myOrder][theirOrder] < 1;
+  const docR = !countered ? doc : Object.assign({}, doc, {
+    mult: Object.assign({}, doc.mult, {[myOrder]: 1 + (doc.mult[myOrder] - 1) * 0.35})
+  });
+  const myEff = orderEffect(b.us.units, myOrder, b.terrain, b.us.morale, myCommit, docR)
                 * COUNTER[myOrder][theirOrder];
   const theirEff = orderEffect(b.them.units, theirOrder, b.terrain, b.them.morale, theirCommit)
                    * COUNTER[theirOrder][myOrder];
@@ -1238,7 +1364,8 @@ function resolveRound(b, myOrder){
 
   const myPool   = strength(b.us.units)   * 0.085;
   const theirPool = strength(b.them.units) * 0.085;
-  const myLossRaw    = myPool    * (theirEff/total) * 2 * ORDERS[myOrder].defence * mods().casualty;
+  const myLossRaw    = myPool    * (theirEff/total) * 2 * ORDERS[myOrder].defence
+                       * doc.defence[myOrder] * mods().casualty;
   const theirLossRaw = theirPool * (myEff/total)    * 2 * ORDERS[theirOrder].defence;
 
   const myLost    = applyLosses(b.us.units,   myLossRaw,    ORDERS[myOrder].losses);
@@ -1268,13 +1395,28 @@ function resolveRound(b, myOrder){
 /* Auto-resolve: the same resolveRound, driven by a simple counter-picking
    heuristic. Not a shortcut past the model — a policy over it. */
 function autoOrder(b){
-  const avail = availableOrders(b.us.units, b.terrain, b);
+  const doc = battleDoctrine();
+  const avail = availableOrders(b.us.units, b.terrain, b, doc);
   if(!avail.length) return "refuse";
-  const likely = PROFILES[b.them.profile].prefer.find(id =>
-    availableOrders(b.them.units, b.terrain, b).includes(id)) || "hold";
+  const theirAvail = availableOrders(b.them.units, b.terrain, b);
+  if(!theirAvail.length) theirAvail.push("refuse");
+  const adaptive = b.them.profile === "condottiere";
+  /* Predict their actual reply rather than a hopeful one. A condottiere
+     counters the order you gave LAST round — which you know, so you can
+     work out what is coming. Everyone else runs to type. */
+  let predicted;
+  const theirEffOf = id => orderEffect(b.them.units, id, b.terrain, b.them.morale, false);
+  if(adaptive && b.log.length){
+    const last = b.log[b.log.length-1].myOrder;
+    predicted = theirAvail.reduce((acc, id) =>
+      theirEffOf(id) * COUNTER[id][last] > theirEffOf(acc) * COUNTER[acc][last] ? id : acc, theirAvail[0]);
+  } else {
+    predicted = PROFILES[b.them.profile].prefer.find(id => theirAvail.includes(id)) || theirAvail[0];
+  }
   let best = avail[0], bestScore = -Infinity;
   avail.forEach(id => {
-    const score = orderEffect(b.us.units, id, b.terrain, b.us.morale, false) * COUNTER[id][likely]
+    const mine = orderEffect(b.us.units, id, b.terrain, b.us.morale, false, doc);
+    const score = mine * COUNTER[id][predicted] - theirEffOf(predicted) * COUNTER[predicted][id]
                   - ORDERS[id].defence * strength(b.us.units) * 0.35;
     if(score > bestScore){ bestScore = score; best = id; }
   });
@@ -1342,13 +1484,14 @@ function resolveSiege(sg, optId){
     sg.relief += rand(0.03, 0.07);
     out = `Another season in the lines at ${sg.town}. They are thinner inside than out.`;
   } else if(optId === "sap"){
-    coin(-SIEGE_OPTS.sap.cost, `mining the wall at ${sg.town}`);
-    const down = rand(22, 36);
+    coin(-SIEGE_OPTS.sap.cost * m.sapCost, `mining the wall at ${sg.town}`);
+    S.stat.saps++;
+    const down = rand(22, 36) * m.sapWall;
     sg.walls = Math.max(0, sg.walls - down);
     sg.relief += rand(0.02, 0.05);
     out = `The mine went in under the north wall. ${Math.round(down)} feet of it is rubble.`;
   } else if(optId === "assault"){
-    const odds = clamp(0.30 + (40 - sg.walls)/110 + S.quality*0.30, 0.15, 0.85);
+    const odds = clamp(0.30 + (40 - sg.walls)/110 + S.quality*0.30 + m.assaultOdds, 0.15, 0.90);
     const cas = strength() * rand(0.07, 0.16) * m.casualty;
     applyLosses(S.units, cas, ORDERS.charge.losses);
     hurtLieutenants(1.3);
@@ -1398,8 +1541,9 @@ function campaignStages(n){
 }
 function breakCampaign(){
   const c = S.campaign; if(!c) return;
-  rep(S, c.faction, -35);
-  S.honor = clamp(S.honor - 10, 0, 100);
+  const bc = mods().breakCost;
+  rep(S, c.faction, -35 * bc);
+  S.honor = clamp(S.honor - 10 * bc, 0, 100);
   post("bad", `You left ${facOf(c.faction).name} in the middle of a campaign. That will be remembered by more people than your employer.`);
   S.campaign = null; S.siege = null;
 }
@@ -1522,10 +1666,13 @@ function payWages(){
 }
 function updateLoyalty(paid, heavyLoss, gotPlunder){
   const m = mods();
+  if(paid) S.stat.cleanPay++; else S.stat.cleanPay = 0;
   if(paid && gotPlunder) S.loyalty = clamp(S.loyalty + 5, 0, 100);
   else if(paid) S.loyalty = clamp(S.loyalty + 1, 0, 100);
   else { S.loyalty = clamp(S.loyalty - m.wageLoyaltyHit, 0, 100); post("bad", flavor("wageShort")); }
   if(heavyLoss && !gotPlunder) S.loyalty = clamp(S.loyalty - 5, 0, 100);
+  // The Articles are a floor, not a cure: they stop a slide, they do not lift.
+  if(m.loyaltyFloor && S.loyalty < m.loyaltyFloor) S.loyalty = m.loyaltyFloor;
 }
 function recruit(){
   if(strength() >= maxLances()) return;
@@ -1627,23 +1774,33 @@ function acceptCampaign(offer){
 function completeCampaign(){
   const c = S.campaign; if(!c) return;
   const f = facOf(c.faction);
-  rep(S, c.faction, rand(4, 8) * f.loyaltyMemory);
+  rep(S, c.faction, rand(5, 10) * f.loyaltyMemory);
   S.honor = clamp(S.honor + 6, 0, 100);
   post("gold", `The campaign for ${f.name} is finished, and finished properly. They know where to find you.`);
   S.campaign = null; S.siege = null;
 }
 /* One season of a campaign. Returns a normal season result, or "await"
    when a battle or a siege takes the screen. */
+function scoutNext(c){
+  const stage = c.stages[c.done];
+  if(stage === "battle" && !c.nextTerrain){
+    c.nextTerrain = pick(TERRAIN_IDS);
+    c.nextProfile = pick(Object.keys(PROFILES));
+  }
+  if(stage !== "battle"){ c.nextTerrain = null; c.nextProfile = null; }
+}
 function advanceCampaign(){
   const c = S.campaign;
   if(!c) return resolveRest(false);
   const f = facOf(c.faction);
+  scoutNext(c);
   const stage = c.stages[c.done] || "march";
   const pay = c.payPerLance * strength();
   coin(pay, `condotta — ${f.short} (season ${c.done+1} of ${c.seasons})`);
 
   if(stage === "battle"){
-    S.battle = newBattle({kind:"campaign"});
+    S.battle = newBattle({kind:"campaign", terrain:c.nextTerrain, profile:c.nextProfile});
+    c.nextTerrain = null; c.nextProfile = null;
     return "await";
   }
   if(stage === "siege"){
@@ -1668,7 +1825,9 @@ function endBattle(){
   let result = {heavyLoss: lost > 0.10 * (strength() + lost), gotPlunder:false};
 
   if(b.over === "won"){
-    const plunder = (c ? c.payPerLance * strength() : 400) * rand(0.10, 0.30);
+    const won = b.log.length ? b.log[b.log.length-1].myOrder : null;
+    if(won && S.stat.wonByOrder[won] !== undefined) S.stat.wonByOrder[won]++;
+    const plunder = (c ? c.payPerLance * strength() : 400) * rand(0.10, 0.30) * mods().plunder;
     coin(plunder, "the field, and what was on it");
     if(f) rep(S, c.faction, rand(1,3) * f.loyaltyMemory);
     S.honor = clamp(S.honor + 3, 0, 100);
@@ -1705,7 +1864,8 @@ function siegeAction(optId){
   }
   if(sg.over === "taken"){
     const c = S.campaign, f = c ? facOf(c.faction) : null;
-    const plunder = rand(280, 820) * (1 + strength()/400);
+    S.stat.townsTaken++;
+    const plunder = rand(280, 820) * (1 + strength()/400) * mods().plunder;
     coin(plunder, `the sack of ${sg.town}`);
     S.dread = clamp(S.dread + rand(6,12), 0, 100);
     if(f) rep(S, c.faction, rand(2,5) * f.loyaltyMemory);
@@ -1795,7 +1955,7 @@ function affordableInvestments(){
 
 function viewField(){
   const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
-  let h = "";
+  let h = tutorialHTML("field");
 
   /* Under contract for a campaign: that is the season's work, and the only
      other choice is to walk away from it. */
@@ -1803,9 +1963,15 @@ function viewField(){
     const c = S.campaign, f = facOf(c.faction);
     const stage = c.stages[c.done] || "march";
     const names = {march:"On the march", battle:"A field to be fought", siege:"A town to be taken"};
+    const md = mods();
+    let scouted = "";
+    if(stage === "battle" && c.nextTerrain){
+      if(md.scoutGround) scouted += ` Your outriders report ${TERRAIN[c.nextTerrain].name.toLowerCase()}.`;
+      if(md.scoutFoe && c.nextProfile) scouted += ` You are facing ${PROFILES[c.nextProfile].name}.`;
+    }
     h += `<div class="camp-strip"><span class="main">
       <span class="t">${f.name} &mdash; season ${c.done+1} of ${c.seasons}</span>
-      <span class="s">${names[stage]}. ${fmt(Math.round(c.payPerLance*strength()))} fl. the season.</span></span></div>`;
+      <span class="s">${names[stage]}. ${fmt(Math.round(c.payPerLance*strength()))} fl. the season.${scouted}</span></span></div>`;
     h += `<section class="sec"><div class="btnrow">
       <button class="btn primary" data-a="campaign">${stage === "march" ? "March on" : stage === "battle" ? "Take the field" : "Sit down before the walls"}</button>
       <button class="btn ghost" data-a="breakcamp">Break the contract</button>
@@ -1837,9 +2003,11 @@ function viewField(){
           <span class="s">${camp
             ? `A campaign. Marches, a field or two, and likely a town to sit down before. Risk: ${Math.round(o.risk*100)}%.`
             : `Garrison and escort work for the season. Risk of the field: ${Math.round(o.risk*100)}%.`}</span>
-          ${uc < 0.97 && top ? `<span class="undercut">${esc(top.name)} is underbidding you — rates are down.</span>` : ""}
         </button>`;
       }).join("");
+      const top = S.rivals.slice().sort((a,b)=>b.renown-a.renown)[0];
+      if(undercutFactor() < 0.97 && top)
+        h += `<p class="lede" style="color:var(--blood)">${esc(top.name)} is underbidding you across the country — every rate here is down.</p>`;
     }
     h += `</section>`;
   }
@@ -1852,7 +2020,9 @@ function viewField(){
 }
 
 function viewCompany(){
-  let h = `<section class="sec"><h2>Your lieutenants</h2>`;
+  let h = tutorialHTML("company")
+    + hint("company", "Lieutenants are named men: they lead, they die, and one of them leads the mutiny if it comes. Investments are permanent, and matter more than raw numbers.");
+  h += `<section class="sec"><h2>Your lieutenants</h2>`;
   const live = liveLts();
   if(!live.length){
     h += `<div class="empty">You have no lieutenants left alive. Nobody speaks for the men but you,
@@ -1867,6 +2037,8 @@ function viewCompany(){
     }).join("");
   }
   h += `</section>`;
+
+  h += doctrineHTML();
 
   h += `<section class="sec"><h2>Investment in the company</h2>
     <p class="lede">Permanent. Bought with the same florins the road home needs, which is the whole difficulty.</p>`;
@@ -1886,9 +2058,114 @@ function viewCompany(){
   return h;
 }
 
+/* ---------------------------------------------------------- tutorial -
+   Steps are predicates, not a script. The current step is simply the first
+   one the player has not yet satisfied, so doing things out of order — or
+   doing the next thing before being told to — can never strand anybody
+   mid-sequence. Dismissible at any point, replayable from the menu. */
+const TUTORIAL = [
+  {id:"offer", view:"field",
+   text:"Every season you take work, ride for tribute, or rest. Start with a contract — the faction, what it pays, and how dangerous the field is are all on the offer.",
+   done:s => s.stat.contracts > 0 || s.campaign || s.stat.raids > 0},
+  {id:"account", view:"field",
+   text:"That was a season. What happened to your company is written in the account below, and in the Account tab in full.",
+   done:s => s.stat.seasons >= 2},
+  {id:"world", view:"field",
+   text:"Open World. Each city remembers you separately, and the two numbers that decide your fate — Dread and Honor — are in the header. Dread gets you hired. Honor keeps the cities from banding together against you.",
+   done:s => !!s.seen.tab_world},
+  {id:"company", view:"field",
+   text:"Open Company. Florins spent on a surgeon or a paymaster do more for a company than florins spent on more men.",
+   done:s => !!s.seen.tab_company},
+  {id:"doctrine", view:"company",
+   text:"Below the investments: choose two things for the company to be known for. They are permanent, and each advances by proving you fight that way.",
+   done:s => s.doctrine.picked.length > 0},
+  {id:"win", view:"field",
+   text:"To be taken off the road for good you need 11,000 florins AND one faction's regard at 60. Chasing the best rate every season is safer; committing to one employer is how you actually get there.",
+   done:s => s.stat.seasons >= 6}
+];
+function tutorialStep(){
+  if(!S.tutorial || S.tutorial.done) return null;
+  for(const t of TUTORIAL){ if(!t.done(S)) return t; }
+  return null;
+}
+function tutorialHTML(view){
+  const t = tutorialStep();
+  if(!t || t.view !== view) return "";
+  return `<div class="tut"><span class="main">${t.text}</span>
+    <button class="btn ghost sm" data-a="tut-off">Stop</button></div>`;
+}
+/* One dismissible line the first time a screen is opened. */
+function hint(key, text){
+  if(S.seen[key]) return "";
+  return `<div class="hint"><span class="main">${text}</span>
+    <button class="btn ghost sm" data-a="hint-seen" data-v="${key}">Got it</button></div>`;
+}
+const INTRO = [
+  {h:"A free company", p:"Italy, 1360s. You are the captain of a few hundred men who fight for whoever pays. There is no state, no flag, and no pension — only the next contract."},
+  {h:"One season, one choice", p:"Four seasons to a year, ten years to a career. Each season you take a condotta, ride to a town and demand money not to burn it, or rest and let the company mend. Wages come due either way."},
+  {h:"Two names, pulling apart", p:"Dread is what gets you hired at a good rate. Honor is what stops the cities agreeing to destroy you. Every raid buys the first and spends the second. That tension is the whole game."},
+  {h:"Getting off the road", p:"Bank 11,000 florins and earn one faction's regard to 60, and you are offered a permanent commission — the thing no free company keeps forever. Lose your men's loyalty, or your creditors, and there is no company left to offer it to."}
+];
+function sheetIntro(){
+  const i = S.tutorial.step || 0;
+  const pg = INTRO[i];
+  return `<h3>${pg.h}</h3><p class="lede">${pg.p}</p>
+    <div class="btnrow" style="margin-top:14px">
+      <button class="btn ghost" data-a="tut-skip">Skip all this</button>
+      <button class="btn primary" data-a="tut-next">${i >= INTRO.length-1 ? "Take the road" : "Next"}</button>
+    </div>
+    <p class="lede" style="text-align:center;margin-top:10px;color:var(--dim)">${i+1} of ${INTRO.length}</p>`;
+}
+
+/* Doctrine: two picks out of eight, three steps each, bought with florins
+   and with proof that the company actually fights that way. */
+function doctrineReady(d){
+  const t = docTier(d.id);
+  if(t >= DOCTRINE_MAX) return false;
+  return d.proof(S) >= d.need[t];
+}
+function doctrineHTML(){
+  const picked = S.doctrine.picked;
+  let h = `<section class="sec"><h2>What the company is known for</h2>`;
+  if(!picked.length){
+    h += `<p class="lede">Choose two. They are what the company trains at, and they
+      cannot be unchosen — a company is known for one thing or two, never eight.</p>`;
+  } else if(picked.length < DOCTRINE_PICKS){
+    h += `<p class="lede">One more to choose, and then the company is what it is.</p>`;
+  }
+
+  const list = picked.length >= DOCTRINE_PICKS ? picked.map(docDef) : DOCTRINES;
+  h += list.map(d => {
+    const t = docTier(d.id), taken = docPicked(d.id);
+    const pips = `${"&#9679;".repeat(t)}${"&#9675;".repeat(DOCTRINE_MAX - t)}`;
+    if(!taken){
+      const room = picked.length < DOCTRINE_PICKS;
+      return `<button class="row" data-a="dpick" data-v="${d.id}"${room?"":" disabled"}>
+        <span class="main"><span class="t">${d.name}</span>
+        <span class="s">${d.note}</span></span>
+        <span class="end" style="color:var(--dim)">${room ? "take" : "&mdash;"}</span></button>`;
+    }
+    const maxed = t >= DOCTRINE_MAX;
+    const cost = maxed ? 0 : DOCTRINE_COST[t];
+    const have = d.proof(S), want = maxed ? 0 : d.need[t];
+    const proofOk = have >= want, coinOk = S.treasury >= cost;
+    let why = "";
+    if(maxed) why = `<em style="color:var(--gold-hi)">Nothing further to learn.</em>`;
+    else if(!proofOk) why = `<em style="color:var(--dim)">Needs ${want} ${d.proofLabel} &mdash; you have ${have}.</em>`;
+    else if(!coinOk) why = `<em style="color:var(--dim)">Needs ${fmt(cost)} fl.</em>`;
+    else why = `<em style="color:var(--green)">Ready &mdash; ${fmt(cost)} fl.</em>`;
+    return `<button class="row owned" ${maxed||!proofOk||!coinOk?'data-a="noop"':`data-a="dstep" data-v="${d.id}"`}${maxed||!proofOk||!coinOk?" disabled":""}>
+      <span class="main"><span class="t">${d.name} <span class="pips" style="color:var(--gold-hi)">${pips}</span></span>
+      <span class="s">${t > 0 ? d.steps[t-1] : d.note}<br>${why}</span></span></button>`;
+  }).join("");
+  h += `</section>`;
+  return h;
+}
+
 function viewCaptain(){
   const m = mods();
-  let h = `<section class="sec"><h2>${esc(S.captainName)}</h2>
+  let h = hint("captain", "Attributes and finery nudge the numbers and shape how events read. The figures at the bottom are the same ones the season is resolved with.");
+  h += `<section class="sec"><h2>${esc(S.captainName)}</h2>
     <div class="bigbanner">${bannerHTML("capBanner", S.banner, 4)}</div>
     <div class="btnrow"><button class="btn ghost sm" data-a="bannersheet">Change the banner</button></div></section>`;
 
@@ -1920,7 +2197,8 @@ function viewCaptain(){
 }
 
 function viewWorld(){
-  let h = `<section class="sec"><h2>Standing with the powers</h2><div class="panel">`;
+  let h = hint("world", "Each city keeps its own account of you. Florence forgets nothing; Milan pays best and breaks faith first; Pisa cannot afford you. Committing to the right one is how a run is won.");
+  h += `<section class="sec"><h2>Standing with the powers</h2><div class="panel">`;
   h += FACTIONS.map(f => {
     const v = S.reputation[f.id];
     const pct = clamp((v+100)/2, 0, 100);
@@ -1958,7 +2236,8 @@ function journalHTML(limit){
 }
 function viewAccount(){
   const recent = S.ledger.slice(-14).reverse();
-  let h = `<section class="sec"><h2>The company's account</h2><div class="panel">${journalHTML(30)}</div></section>`;
+  let h = hint("account", "Everything that happened to the company, in order, with the money underneath it.");
+  h += `<section class="sec"><h2>The company's account</h2><div class="panel">${journalHTML(30)}</div></section>`;
   h += `<section class="sec"><h2>The ledger</h2>`;
   if(!recent.length) h += `<div class="empty">No entries yet.</div>`;
   else h += `<div class="panel">${recent.map(r =>
@@ -1971,9 +2250,10 @@ function viewAccount(){
 /* ------------------------------------------------------ battle view - */
 function viewBattle(){
   const b = S.battle, t = TERRAIN[b.terrain];
-  const avail = availableOrders(b.us.units, b.terrain, b);
+  const avail = availableOrders(b.us.units, b.terrain, b, battleDoctrine());
   const p = PROFILES[b.them.profile];
-  let h = `<section class="sec"><h2>${t.name}</h2>
+  let h = hint("battle", "Volley beats a braced line; a charge beats archers; a braced line stops a charge. The ground shifts which of those is true. Refusing the flank never wins, but it keeps the company.");
+  h += `<section class="sec"><h2>${t.name}</h2>
     <p class="lede">${t.note} Against ${p.name} — ${p.note.toLowerCase()}</p>
     <div class="bfwrap">${battleCanvasHTML("bfield")}</div>
     <div class="panel" style="margin-top:10px">
@@ -2160,6 +2440,7 @@ function sheetMenu(){
       <button class="btn ghost" data-a="export">Copy company as text</button>
       <button class="btn ghost" data-a="import">Paste a company in</button>
       <button class="btn ghost" data-a="help">How this works</button>
+      <button class="btn ghost" data-a="tut-on">Walk me through it again</button>
       <button class="btn ghost" data-a="newco">Abandon and start new</button>
       <button class="btn" data-a="scrim">Close</button></div>`;
 }
@@ -2278,9 +2559,21 @@ document.addEventListener("click", e => {
       const name = (build.name||"").trim() || "the Captain";
       const b = BUILDS.find(x => x.id === build.pick) || BUILDS[0];
       newGame(name, b, build.attrs, build.banner, build.difficulty);
-      build = null; render(); break; }
+      build = null; render();
+      if(!S.tutorial.done) openSheet(sheetIntro);
+      break; }
 
-    case "go": S.tab = v; save(); render(); window.scrollTo(0,0); break;
+    case "go": S.tab = v; S.seen["tab_"+v] = true; save(); render(); window.scrollTo(0,0); break;
+    case "hint-seen": S.seen[v] = true; save(); render(); break;
+    case "tut-off": S.tutorial.done = true; save(); render(); toast("Guidance off. It is in the menu if you want it back."); break;
+    case "tut-skip": S.tutorial.done = true; S.tutorial.step = 0; closeSheet(); save(); render(); break;
+    case "tut-next": {
+      S.tutorial.step = (S.tutorial.step || 0) + 1;
+      if(S.tutorial.step >= INTRO.length){ S.tutorial.step = 0; closeSheet(); }
+      else renderSheet();
+      save(); render(); break; }
+    case "tut-on": S.tutorial = {step:0, done:false}; S.seen = {}; closeSheet(); save(); render();
+      openSheet(sheetIntro); break;
     case "menu": openSheet(sheetMenu); break;
     case "help": openSheet(sheetHelp); break;
     case "slots": openSheet(() => sheetSlots(v)); break;
@@ -2319,6 +2612,25 @@ document.addEventListener("click", e => {
       S.kit[slot] = id;
       post("", `You took up ${k.name.charAt(0).toLowerCase()}${k.name.slice(1)}.`);
       save(); closeSheet(); render(); toast("Worn."); break; }
+    case "dpick": {
+      if(S.doctrine.picked.length >= DOCTRINE_PICKS || docPicked(v)) break;
+      const d = docDef(v); if(!d) break;
+      S.doctrine.picked.push(v);
+      S.doctrine.tier[v] = 1;
+      post("gold", `The company takes up ${d.name}. ${d.steps[0]}`);
+      save(); render(); toast(`${d.name} — first step.`);
+      break; }
+    case "dstep": {
+      const d = docDef(v); if(!d || !docPicked(v)) break;
+      const t = docTier(v);
+      if(t >= DOCTRINE_MAX) break;
+      const cost = DOCTRINE_COST[t];
+      if(S.treasury < cost || d.proof(S) < d.need[t]) break;
+      coin(-cost, `${d.name}, step ${t+1}`);
+      S.doctrine.tier[v] = t + 1;
+      post("gold", `${d.name}, step ${t+1}: ${d.steps[t]}`);
+      save(); render(); toast(`${d.name} — step ${t+1}.`);
+      break; }
     case "invest": {
       const i = invDef(v);
       if(!i || has(v) || S.treasury < i.cost) break;

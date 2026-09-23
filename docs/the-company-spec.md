@@ -260,6 +260,102 @@ rate the whole economy was calibrated against.
   terrain that penalises it, and an enemy morale bar sharing the archers'
   gold so it read as a fourth unit block.
 
+---
+
+# Built — Stage 3: doctrine and a tutorial
+
+## Two doctrines out of eight, three steps each
+
+Investments are facilities you buy. **Doctrine is what the company trains
+at**, and it is permanent: two picks out of eight, each advancing in three
+steps that cost florins *and* proof you actually fight that way. A locked
+step states the requirement and your progress against it — "Needs 6 fields
+won having loosed a volley — you have 4."
+
+Three war doctrines strengthen one order of the counterplay triangle each
+(The Volley, The Braced Line, The Charge). Five company doctrines do not
+touch battle at all and duplicate no investment: Guastatori (engineering),
+Corridori (scouting, which reveals the coming ground and then the coming
+enemy), The Articles (discipline and a floor under loyalty), The Chancery
+(terms, and a cheaper exit from a contract), Ransom and Booty (plunder).
+
+## The design rule that kept the triangle alive
+
+A doctrine must make you better at what you are good at, **not erase your
+bad matchup**. The first cut did exactly that: hold doctrine took hold from
+27% to 84% against militia, the one opponent it is supposed to struggle
+with. Doctrine is now reduced to a third of its strength whenever the order
+is being countered — drilled archers shoot better, but a charge reaching
+them is still a charge reaching them.
+
+Measured with each war doctrine at its third step, the triangle holds: volley
+doctrine leaves volley at 53% in a defile where it has no room, charge
+doctrine leaves charge situational, and each still has an opponent it loses
+to.
+
+## Win condition rebalanced — a Stage 2 regression caught here
+
+Doctrine ablation surfaced something that had nothing to do with doctrine:
+**the money half of the win condition had stopped being a gate.** Campaigns
+and sieges grew the economy enough that the 11,000 florin threshold was met
+in 89–99% of runs, average ending treasury ~21,500. The game had quietly
+become a pure reputation race.
+
+Threshold raised to 18,000. Both halves bind again, and the effect of an
+economic doctrine is now legible in exactly the right place: The Chancery
+lifts the money gate from 68% to 95% of runs but does not move the
+reputation gate, so it buys you the florins and not the trust.
+
+## The tutorial
+
+A four-page intro at first run, a guidance strip on the real view that names
+the next thing to do, and one dismissible hint the first time each screen is
+opened. Skippable at any point and replayable from the menu; a migrated save
+is never shown it.
+
+The steps are **predicates, not a script** — the current step is simply the
+first one the player has not satisfied, so doing things out of order, or
+ahead of being told, can never strand anyone mid-sequence.
+
+## Balance after Stage 3
+
+| Policy | Win | Mutiny |
+|---|---|---|
+| Mixed, best rate | 8–11% | 1–2% |
+| Loyal to Florence | 18.4% | 3.6% |
+| Loyal to Pisa | 6.8% | 8.0% |
+| No doctrine | 6.4% | 1.2% |
+| Two doctrines maxed | 11.6% | 0.4% |
+
+Doctrine is worth roughly a doubling of win rate at full investment, which
+puts it alongside the investment track rather than above it.
+
+Enemy scale was re-tuned because the auto-battle policy got materially
+better: it now predicts the enemy's actual reply (a condottiere counters the
+order you gave *last* round, which is knowable) rather than assuming they
+play their preference. Its order mix is hold 35% / volley 46% / charge 8% /
+refuse 11% — varied rather than one-note.
+
+## What measurement caught this stage
+
+- **The order-dominance harness was lying.** When a policy was unavailable
+  it silently fell back to `avail[0]` and reported the result under the
+  original label — so every "charge" cell on terrain where charge is gated
+  out was actually measuring *hold*. This also corrects Stage 2's claim that
+  hold and charge were "tied" in broken ground: they were the same order.
+- A first fix over-corrected, discarding any battle where the policy became
+  unavailable *mid*-fight — which is most charge battles, since charging
+  burns men-at-arms. Now unavailable-at-the-outset is `n/a`, and running out
+  mid-battle falls back to a clearly-labelled `refuse`.
+- **The harness was not passing doctrine into `availableOrders`**, so it
+  could not see charge III widening the ground charging is legal on.
+- The auto-policy assumed the enemy played its *preference*, which
+  recommended charging into ground where the counter was waiting — invisible
+  until doctrine opened that option up.
+- A phone screenshot caught a toast rendering `&mdash;` literally (toasts are
+  escaped, so entities do not work there) and the rival-undercut warning
+  repeated on every single offer instead of stated once.
+
 ## Still not built
 
 No naval or river actions, no multi-company alliances, and the captain does
