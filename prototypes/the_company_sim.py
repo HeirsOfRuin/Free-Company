@@ -1,6 +1,27 @@
 """
 The Company — numbers-only kill-gate prototype.
 
+    STATUS: this is the Stage 1 record, and it is no longer authoritative.
+
+Stage 2 replaced the scalar `lances` with a unit composition and the single
+`0.4 + 0.4*quality` contract roll with a multi-round tactical resolver. Rather
+than port that resolver to Python and maintain two models of the same thing,
+the measurement moved into the browser, where the harnesses in `tools/`
+exercise the ACTUAL shipped functions in index.html:
+
+    tools/measure-orders.js    order-dominance matrix (the design gate)
+    tools/measure-battles.js   battle outcome distribution and enemy scaling
+    tools/measure-economy.js   full 40-season runs by policy
+
+A Python port would be a second implementation that drifts from the first,
+and a balance number measured against a drifted model is worse than no
+number. The browser harness cannot drift: it is the game.
+
+What follows is kept because it is the record of how the core loop was
+validated before any game code existed, and its findings still stand for the
+Stage 1 economy it describes.
+
+
 No UI, no art, no HTML. This runs the season loop as pure arithmetic across
 several naive fixed strategies and many random seeds, to answer one
 question before any code for the real game gets written:

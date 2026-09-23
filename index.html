@@ -147,6 +147,14 @@ textarea.blob{width:100%;min-height:90px;background:var(--panel);border:1px soli
 .bigbanner{display:flex;justify-content:center;margin:6px 0 12px}
 .bigbanner canvas{width:96px;height:124px;border:1px solid var(--line)}
 
+.bfwrap{display:flex;justify-content:center}
+.battlefield{width:100%;max-width:344px;height:auto;border:1px solid var(--line);border-radius:6px}
+.camp-strip{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:10px;
+  border:1px solid var(--gold-dim,#6a5518);background:#241F13;border-radius:var(--r)}
+.camp-strip .main{flex:1}
+.camp-strip .t{font-size:13.5px;color:var(--parchment);font-weight:600}
+.camp-strip .s{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel-hi);
   border:1px solid var(--line);border-radius:999px;padding:9px 18px;font-size:13px;z-index:90;
   box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;max-width:88vw;text-align:center}
@@ -245,14 +253,103 @@ const DIFFICULTY = {
     pay:0.88, risk:1.20, coalition:1.35}
 };
 
+/* Unit types. Upkeep is per head per season; the default composition below
+   comes out within ~1% of the scalar figure the economy was validated
+   against (200 lances x (3 + 4*0.5) = 1,000), so the swap does not move the
+   ledger on its own. */
+const UNITS = {
+  maa:  {id:"maa",  name:"Men-at-arms",     short:"Men-at-arms", upkeep:8.0, recruit:22,
+         note:"Heavy horse and heavy foot. They hold, and they charge."},
+  arch: {id:"arch", name:"Mounted archers", short:"Archers",     upkeep:5.0, recruit:15,
+         note:"The English trick that changed this trade. Deadly at range, badly exposed if reached."},
+  inf:  {id:"inf",  name:"Brigands",        short:"Brigands",    upkeep:2.6, recruit:7,
+         note:"Cheap, numerous, replaceable. They screen and they hold ground, until they do not."}
+};
+const UNIT_IDS = ["maa","arch","inf"];
+
 const BUILDS = [
-  {id:"balanced", name:"A balanced company", lances:200, quality:0.50, treasury:2000,
+  {id:"balanced", name:"A balanced company", units:{maa:60, arch:70, inf:70}, quality:0.50, treasury:2000,
    blurb:"Even numbers, even pay. No particular edge, no particular weakness."},
-  {id:"heavy", name:"Uomini d'arme — heavy lances", lances:170, quality:0.60, treasury:1800,
+  {id:"heavy", name:"Uomini d'arme — heavy lances", units:{maa:75, arch:45, inf:50}, quality:0.60, treasury:1800,
    blurb:"Fewer men, better trained, dearer to keep. Wins more of the fights it takes."},
-  {id:"free", name:"Free riders — light and many", lances:230, quality:0.40, treasury:2200,
+  {id:"free", name:"Free riders — light and many", units:{maa:40, arch:70, inf:120}, quality:0.40, treasury:2200,
    blurb:"Numerous and cheap to replace. Loses more fights, but a bad season costs less to fix."}
 ];
+
+/* ------------------------------------------------------------ the field -
+   Terrain multiplies the effectiveness of each order. This table is what
+   stops one order from being correct everywhere. */
+const TERRAIN = {
+  open:   {id:"open",   name:"Open field",       hold:0.85, volley:1.20, charge:1.25,
+           refuse:0.90, tint:"#3E4A2E", note:"Room to manoeuvre, and nowhere to hide."},
+  broken: {id:"broken", name:"Broken ground",    hold:1.20, volley:0.85, charge:0.65,
+           refuse:1.10, tint:"#4A3F2E", note:"Ditches, vine terraces and field walls. No country for horses."},
+  river:  {id:"river",  name:"A river crossing", hold:1.20, volley:1.00, charge:0.50,
+           refuse:1.05, tint:"#2E404A", note:"They must come to you through the water."},
+  hills:  {id:"hills",  name:"The high ground",  hold:0.95, volley:1.25, charge:0.80,
+           refuse:1.00, tint:"#3A3A2C", note:"A long view of the approach, and the slope on your side."},
+  defile: {id:"defile", name:"A defile",         hold:1.35, volley:0.75, charge:0.45,
+           refuse:1.15, tint:"#2C2A26", note:"A narrow place. Numbers count for very little here."}
+};
+const TERRAIN_IDS = Object.keys(TERRAIN);
+
+/* Orders. `power` reads a composition and returns raw effect; `losses` is
+   how that order distributes the casualties it takes across unit types;
+   `defence` scales casualties taken. */
+const ORDERS = {
+  hold: {
+    id:"hold", name:"Dismount and hold", verb:"held the line on foot",
+    line:"Men-at-arms afoot in close order. The company's oldest answer.",
+    power: u => u.maa*1.10 + u.inf*0.70 + u.arch*0.30,
+    losses:{maa:0.50, inf:0.40, arch:0.10}, defence:0.70, moraleSelf:2,
+    need:(u,t) => frac(u,"maa") >= 0.15,
+    why:"Needs men-at-arms enough to form a line — at least a sixth of the company."
+  },
+  volley: {
+    id:"volley", name:"Loose a volley", verb:"shot them up at range",
+    line:"Archers forward. Hurt them before they ever reach you.",
+    power: u => u.arch*1.30 + u.maa*0.20 + u.inf*0.20,
+    losses:{maa:0.20, inf:0.35, arch:0.45}, defence:0.90, moraleSelf:1,
+    need:(u,t) => frac(u,"arch") >= 0.10,
+    why:"Needs archers — at least a tenth of the company."
+  },
+  charge: {
+    id:"charge", name:"Sound the charge", verb:"went in mounted",
+    line:"Horse, at speed, at whatever is in front. Decisive or ruinous.",
+    power: u => u.maa*1.50 + u.arch*0.50 + u.inf*0.30,
+    losses:{maa:0.60, arch:0.20, inf:0.20}, defence:1.30, moraleSelf:0,
+    need:(u,t) => frac(u,"maa") >= 0.20 && TERRAIN[t].charge >= 0.75,
+    why:"Needs a fifth of the company in men-at-arms, and ground a horse can cross."
+  },
+  refuse: {
+    id:"refuse", name:"Refuse the flank", verb:"gave ground in good order",
+    line:"Give ground, keep the line, save the company. You will not win the day this way.",
+    power: u => u.maa*0.62 + u.inf*0.58 + u.arch*0.42,
+    losses:{maa:0.30, arch:0.20, inf:0.50}, defence:0.45, moraleSelf:-6,
+    need:() => true, why:""
+  }
+};
+const ORDER_IDS = ["hold","volley","charge","refuse"];
+
+/* The triangle. COUNTER[mine][theirs] scales my effectiveness.
+   Volley beats hold (a static formation is a target); charge beats volley
+   (closing is the answer to bowmen); hold beats charge (braced men stop
+   horses — the White Company's actual trick). */
+const COUNTER = {
+  hold:   {hold:1.00, volley:0.75, charge:1.40, refuse:1.05},
+  volley: {hold:1.35, volley:1.00, charge:0.88, refuse:1.10},
+  charge: {hold:0.70, volley:1.25, charge:1.00, refuse:1.15},
+  refuse: {hold:0.90, volley:0.85, charge:0.90, refuse:1.00}
+};
+
+const PROFILES = {
+  condottiere:{id:"condottiere", name:"a condottiere company",
+    note:"Professionals. They will take the ground if you let them.", prefer:["charge","volley","hold","refuse"]},
+  militia:{id:"militia", name:"communal militia",
+    note:"Townsmen with good crossbows and no wish to die for the commune.", prefer:["hold","volley","refuse","charge"]},
+  levy:{id:"levy", name:"a feudal levy",
+    note:"Knights who have read about war in poems.", prefer:["charge","charge","hold","refuse"]}
+};
 
 /* Captain attributes. Light mechanics, by design — these shape who the
    captain is and how events read, and nudge the numbers slightly. They
@@ -498,9 +595,9 @@ const INCIDENTS = [
    title:"Sickness in the camp",
    text:"It starts in the horse lines and is through the infantry in a fortnight. The physicians of {town} will not come out to you.",
    choices:[
-     {t:"Break camp and scatter the company", fx:s => { s.lances=Math.max(0,s.lances*0.94); s.loyalty=Math.max(0,s.loyalty-4); s.flags.plague=1;
+     {t:"Break camp and scatter the company", fx:s => { applyLosses(s.units, strength(s.units)*0.06); s.loyalty=Math.max(0,s.loyalty-4); s.flags.plague=1;
        return "You split into a dozen camps across the hills. It cost you cohesion and saved most of the men."; }},
-     {t:"Hold together and ride it out", fx:s => { s.lances=Math.max(0,s.lances*0.86); s.loyalty=Math.min(100,s.loyalty+6); s.flags.plague=1;
+     {t:"Hold together and ride it out", fx:s => { applyLosses(s.units, strength(s.units)*0.14); s.loyalty=Math.min(100,s.loyalty+6); s.flags.plague=1;
        return "You stayed. It took a fifth of the sick with it, and the company came out of it closer than it went in."; }}]},
 
   {id:"convoy", weight:3,
@@ -556,7 +653,7 @@ const INCIDENTS = [
    title:"The season turns against you",
    text:"Rain for five weeks. The roads are soup, the horses are lame, and the country you are sitting in has stopped feeding you.",
    choices:[
-     {t:"Move to better ground", fx:s => { s.lances=Math.max(0,s.lances*0.97); coin(-180,"a miserable march");
+     {t:"Move to better ground", fx:s => { applyLosses(s.units, strength(s.units)*0.03); coin(-180,"a miserable march");
        return "A wretched march that cost horses and a little money, and got the company out of the mud."; }},
      {t:"Sit it out", fx:s => { s.loyalty=Math.max(0,s.loyalty-7);
        return "You stayed put and let the men be miserable. They were, comprehensively."; }}]},
@@ -675,6 +772,85 @@ function drawBanner(canvas, seed, scale){
   ctx.fillRect(0, 0, Math.max(1, Math.floor(scale*0.8)), BH*scale);
   return spec;
 }
+/* Draw a banner into an existing context at an offset, for the battle
+   diagram. Shares bannerSpec with drawBanner, so a company's arms are the
+   same arms wherever they fly. */
+function drawBannerAt(ctx, seed, ox, oy, scale, w, h){
+  const spec = bannerSpec(seed);
+  w = w || 11; h = h || 14;
+  const c1 = TINCTURES[spec.t1], c2 = TINCTURES[spec.t2];
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      let col = c1; const half=w/2, halfY=h/2;
+      switch(spec.division){
+        case "perPale":    col = x<half ? c1 : c2; break;
+        case "perFess":    col = y<halfY ? c1 : c2; break;
+        case "quarterly":  col = ((x<half)===(y<halfY)) ? c1 : c2; break;
+        case "perBend":    col = (x/w + y/h) < 1 ? c1 : c2; break;
+        case "perSaltire": col = (Math.abs(x/w-0.5) > Math.abs(y/h-0.5)) ? c1 : c2; break;
+        case "perChevron": col = (y/h) > (0.35 + Math.abs(x/w-0.5)) ? c2 : c1; break;
+        case "barry":      col = (Math.floor(y/2)%2) ? c2 : c1; break;
+        case "paly":       col = (Math.floor(x/2)%2) ? c2 : c1; break;
+      }
+      ctx.fillStyle = col;
+      ctx.fillRect((ox+x)*scale, (oy+y)*scale, scale, scale);
+    }
+  }
+  const g = CHARGES[spec.charge], gx = ox + Math.floor((w-11)/2), gy = oy + Math.floor((h-11)/2);
+  ctx.fillStyle = TINCTURES[spec.chargeT];
+  for(let y=0;y<g.length;y++) for(let x=0;x<g[y].length;x++){
+    if(g[y][x] !== "#") continue;
+    const px = gx+x, py = gy+y;
+    if(px < ox || px >= ox+w || py < oy || py >= oy+h) continue;
+    ctx.fillRect(px*scale, py*scale, scale, scale);
+  }
+}
+
+const UNIT_COLOUR = {maa:"#B7BFC6", arch:"#C9A227", inf:"#8C6A4A"};
+const BDW = 86, BDH = 46;
+/* The battle diagram. Strips are drawn from b.us.units / b.them.units —
+   the very objects resolveRound mutates — so what the player sees thinning
+   is the same number that decides the fight. No display copy exists. */
+function drawBattle(canvas, b, scale){
+  const ctx = canvas.getContext("2d");
+  canvas.width = BDW*scale; canvas.height = BDH*scale;
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = TERRAIN[b.terrain].tint;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "rgba(0,0,0,.22)";
+  ctx.fillRect(0, (BDH/2-1)*scale, canvas.width, 2*scale);
+
+  drawBannerAt(ctx, S.banner, 2, 3, scale, 11, 14);
+  drawBannerAt(ctx, b.them.banner, BDW-13, BDH-17, scale, 11, 14);
+
+  const maxW = 44;
+  const base = Math.max(strength(b.us.units), strength(b.them.units), 1);
+  UNIT_IDS.forEach((k,i) => {
+    const n = b.us.units[k];
+    const w = Math.max(n > 0.5 ? 1 : 0, Math.round(maxW * (n/base)));
+    ctx.fillStyle = UNIT_COLOUR[k];
+    ctx.fillRect(16*scale, (4 + i*4)*scale, w*scale, 3*scale);
+  });
+  UNIT_IDS.forEach((k,i) => {
+    const n = b.them.units[k];
+    const w = Math.max(n > 0.5 ? 1 : 0, Math.round(maxW * (n/base)));
+    ctx.fillStyle = UNIT_COLOUR[k];
+    ctx.fillRect((BDW-16-w)*scale, (BDH-7-i*4)*scale, w*scale, 3*scale);
+  });
+
+  const bar = (x,y,val,col) => {
+    ctx.fillStyle = "#1A1713"; ctx.fillRect(x*scale, y*scale, 40*scale, 2*scale);
+    ctx.fillStyle = col; ctx.fillRect(x*scale, y*scale, Math.round(40*val/100)*scale, 2*scale);
+  };
+  bar(16, 17, b.us.morale, b.us.morale <= 30 ? "#9C3A3A" : "#6FAE7C");
+  bar(30, BDH-4, b.them.morale, b.them.morale <= 30 ? "#9C3A3A" : "#6FAE7C");
+}
+function battleCanvasHTML(id){ return `<canvas id="${id}" class="battlefield"></canvas>`; }
+function paintBattle(){
+  const cv = document.getElementById("bfield");
+  if(cv && S.battle) drawBattle(cv, S.battle, 4);
+}
+
 function bannerHTML(id, seed, scale, cls){
   return `<canvas id="${id}" data-seed="${esc(seed)}" data-scale="${scale}" class="${cls||""}"></canvas>`;
 }
@@ -715,11 +891,14 @@ function makeRival(){
 
 function newGame(captainName, b, attrs, bannerSeed, difficulty){
   S = {
-    v: 2,
+    v: 3,
     captainName, companyName: `The Company of ${captainName}`,
     build: b.id, difficulty: difficulty || "captain",
     turn: 0,
-    treasury: b.treasury, lances: b.lances, startLances: b.lances, quality: b.quality,
+    treasury: b.treasury,
+    units: {maa:b.units.maa, arch:b.units.arch, inf:b.units.inf},
+    startUnits: {maa:b.units.maa, arch:b.units.arch, inf:b.units.inf},
+    quality: b.quality,
     loyalty: 70, dread: 0, honor: 50,
     reputation: Object.fromEntries(FACTIONS.map(f => [f.id, 0])),
     attrs: attrs || Object.fromEntries(ATTRS.map(a => [a.id, ATTR_BASE])),
@@ -729,6 +908,7 @@ function newGame(captainName, b, attrs, bannerSeed, difficulty){
     lieutenants: Array.from({length:4}, makeLieutenant),
     rivals: Array.from({length:3}, makeRival),
     offers: [], underContract: null,
+    campaign: null, siege: null, battle: null,
     negTreasuryStrikes: 0,
     tab: "field",
     ledger: [], journal: [], journalSeq: 0,
@@ -736,7 +916,7 @@ function newGame(captainName, b, attrs, bannerSeed, difficulty){
     over: null, flags: {}
   };
   rollOffers();
-  post("gold", `${S.companyName} takes the road out of ${pick(TOWNS)}, ${fmt(S.lances)} lances strong, in the spring of ${yearOf(0)}.`);
+  post("gold", `${S.companyName} takes the road out of ${pick(TOWNS)}, ${fmt(strength())} lances strong, in the spring of ${yearOf(0)}.`);
   save();
 }
 
@@ -772,8 +952,25 @@ function migrate(o){
     o.tab = "field";
     if(!o.stat) o.stat = {};
     o.stat.incidents = o.stat.incidents || 0;
+    o.v = 2;   // fall through the v2 -> v3 composition split below
   }
-  if(o.v !== 2) return null;
+  if(o.v === 2){
+    /* Scalar strength becomes a composition. Split it in the ratio of
+       whichever build this company started as, so a migrated save fields
+       the army it always had rather than a default one. */
+    const b = BUILDS.find(x => x.id === o.build) || BUILDS[0];
+    const total = strength(b.units) || 1;
+    const have = (typeof o.lances === "number" && o.lances > 0) ? o.lances : total;
+    o.units = {}; o.startUnits = {};
+    UNIT_IDS.forEach(k => {
+      o.units[k] = Math.max(0, have * (b.units[k]/total));
+      o.startUnits[k] = b.units[k];
+    });
+    delete o.lances; delete o.startLances;
+    o.campaign = null; o.siege = null; o.battle = null;
+    o.v = 3;
+  }
+  if(o.v !== 3) return null;
   return repair(o);
 }
 function repair(o){
@@ -788,6 +985,14 @@ function repair(o){
   if(!o.difficulty) o.difficulty = "captain";
   if(!o.tab) o.tab = "field";
   if(o.negTreasuryStrikes === undefined) o.negTreasuryStrikes = 0;
+  if(!o.units){
+    const b = BUILDS.find(x => x.id === o.build) || BUILDS[0];
+    o.units = Object.assign({}, b.units);
+  }
+  if(!o.startUnits) o.startUnits = Object.assign({}, o.units);
+  if(o.campaign === undefined) o.campaign = null;
+  if(o.siege === undefined) o.siege = null;
+  if(o.battle === undefined) o.battle = null;
   if(o.journalSeq === undefined) o.journalSeq = (o.journal||[]).length;
   if(o.underContract === undefined) o.underContract = null;
   return o;
@@ -890,10 +1095,314 @@ function mods(){
 /* Effective dread = what you have earned, plus what you wear. One place. */
 function effDread(){ return clamp(S.dread + mods().dread, 0, 100); }
 
+/* -------------------------------------------------------- composition -
+   `strength()` is THE derived total. Nothing else adds the unit counts up,
+   and nothing writes to S.units except applyLosses/addRecruits, so losses
+   can never be applied twice or to a stale figure. */
+function strength(u){ u = u || S.units; return u.maa + u.arch + u.inf; }
+function frac(u, k){ const t = strength(u); return t > 0 ? u[k]/t : 0; }
+function startStrength(){ return strength(S.startUnits); }
+
+/* Distribute n casualties across unit types by weight, spilling into
+   whatever is left when a type runs out — so a company of pure archers
+   still bleeds when the order says men-at-arms should. */
+function applyLosses(units, n, weights){
+  n = Math.max(0, n);
+  weights = weights || {maa:1/3, arch:1/3, inf:1/3};
+  let left = n;
+  for(let pass = 0; pass < 3 && left > 0.01; pass++){
+    const avail = UNIT_IDS.filter(k => units[k] > 0);
+    if(!avail.length) break;
+    const wsum = avail.reduce((a,k) => a + (weights[k] || 0.001), 0);
+    let took = 0;
+    avail.forEach(k => {
+      const want = left * ((weights[k] || 0.001) / wsum);
+      const got = Math.min(units[k], want);
+      units[k] -= got; took += got;
+    });
+    left -= took;
+    if(took < 0.001) break;
+  }
+  return n - left;
+}
+function addRecruits(units, n, weights){
+  weights = weights || {maa:0.3, arch:0.35, inf:0.35};
+  UNIT_IDS.forEach(k => { units[k] += n * (weights[k] || 0); });
+}
+/* Recruiting is priced by what you are actually buying back. */
+function recruitCostPer(){
+  const w = {maa:0.3, arch:0.35, inf:0.35};
+  return UNIT_IDS.reduce((a,k) => a + w[k]*UNITS[k].recruit, 0);
+}
+
 /* ------------------------------------------------------------ engine - */
-function upkeepPerLance(){ return 3.0 + 4.0 * S.quality; }
-function wageBill(){ return S.lances * upkeepPerLance(); }
-function maxLances(){ return S.startLances * CONFIG.maxLancesMult; }
+/* Composition carries most of the "better troops cost more" weight now, so
+   quality's influence on upkeep is reduced rather than removed. */
+function upkeepPerLance(){ return wageBill() / Math.max(1, strength()); }
+function wageBill(){
+  const q = 0.85 + 0.30 * S.quality;
+  return UNIT_IDS.reduce((a,k) => a + S.units[k]*UNITS[k].upkeep, 0) * q;
+}
+function maxLances(){ return startStrength() * CONFIG.maxLancesMult; }
+
+/* ----------------------------------------------------------- battle -
+   resolveRound() is a pure function of (battle, myOrder, rng-free Math.random)
+   with no DOM contact, so the same code resolves a battle the player fights
+   click by click, a battle waved through with "let them handle it", and a
+   battle run ten thousand times by a measurement harness. There is no
+   second path and therefore nothing to drift. */
+function orderAvailable(id, units, terrainId, battle){
+  const o = ORDERS[id];
+  if(!o) return false;
+  return !!o.need(units, terrainId, battle);
+}
+function availableOrders(units, terrainId, battle){
+  return ORDER_IDS.filter(id => orderAvailable(id, units, terrainId, battle));
+}
+/* Effectiveness of one side this round. The number the UI shows the player
+   and the number the resolver consumes are this same call. */
+function orderEffect(units, orderId, terrainId, morale, committed){
+  const o = ORDERS[orderId];
+  const tm = TERRAIN[terrainId][orderId];
+  if(typeof tm !== "number" || !isFinite(tm)){
+    console.error("no terrain multiplier for", orderId, "on", terrainId);
+    return 0;
+  }
+  const raw = o.power(units);
+  const v = raw * tm * (1 + morale/200) * (committed ? 1.5 : 1);
+  return isFinite(v) ? v : 0;
+}
+function makeEnemy(strengthTarget, profileId, seed){
+  const p = PROFILES[profileId];
+  let mix;
+  if(profileId === "militia")      mix = {maa:0.18, arch:0.32, inf:0.50};
+  else if(profileId === "levy")    mix = {maa:0.45, arch:0.10, inf:0.45};
+  else                             mix = {maa:0.32, arch:0.30, inf:0.38};
+  const units = {};
+  UNIT_IDS.forEach(k => { units[k] = Math.max(0, Math.round(strengthTarget * mix[k])); });
+  return { units, morale: Math.round(rand(58, 80)), profile: profileId,
+           banner: seed || randomSeed(), committed:false, name:p.name };
+}
+function startMorale(){
+  return clamp(Math.round(45 + 0.30*S.loyalty + 20*S.quality), 20, 100);
+}
+function newBattle(opts){
+  opts = opts || {};
+  const terrain = opts.terrain || pick(TERRAIN_IDS);
+  const ratio = opts.ratio || rand(1.00, 1.35);
+  const profile = opts.profile || pick(Object.keys(PROFILES));
+  return {
+    terrain, round:1, maxRounds: opts.maxRounds || 6,
+    kind: opts.kind || "battle",            // battle | relief | coalition
+    us: { units: {maa:S.units.maa, arch:S.units.arch, inf:S.units.inf},
+          morale: startMorale(), committed:false },
+    them: makeEnemy(Math.max(30, Math.round(strength() * ratio)), profile, opts.banner),
+    log: [], over:null, reserveUsed:false
+  };
+}
+/* The enemy's order for this round, from its behaviour profile. A levy
+   charges into a defile because a levy would; that is exploitable on
+   purpose, and readable once the player has seen it happen. */
+function enemyOrder(b){
+  const avail = availableOrders(b.them.units, b.terrain, b);
+  if(!avail.length) return "refuse";
+  /* Condottieri are professionals: they counter what you did last round.
+     Militia and levies run to type, which is what makes them readable. */
+  if(b.them.profile === "condottiere" && b.log.length && Math.random() < 0.72){
+    const last = b.log[b.log.length-1].myOrder;
+    let best = avail[0], bestScore = -Infinity;
+    avail.forEach(id => {
+      const sc = orderEffect(b.them.units, id, b.terrain, b.them.morale, false) * COUNTER[id][last];
+      if(sc > bestScore){ bestScore = sc; best = id; }
+    });
+    return best;
+  }
+  const prefs = PROFILES[b.them.profile].prefer;
+  for(const id of prefs){
+    if(avail.includes(id) && Math.random() < 0.80) return id;
+  }
+  return avail.find(id => prefs.includes(id)) || avail[0] || "refuse";
+}
+/* The one resolver. Mutates the battle object and returns a description of
+   what happened; callers do the narrating. */
+function resolveRound(b, myOrder){
+  const theirOrder = enemyOrder(b);
+  const myCommit = b.us.committed, theirCommit = b.them.committed;
+  b.us.committed = false; b.them.committed = false;
+
+  const myEff = orderEffect(b.us.units, myOrder, b.terrain, b.us.morale, myCommit)
+                * COUNTER[myOrder][theirOrder];
+  const theirEff = orderEffect(b.them.units, theirOrder, b.terrain, b.them.morale, theirCommit)
+                   * COUNTER[theirOrder][myOrder];
+  const total = Math.max(1, myEff + theirEff);
+
+  const myPool   = strength(b.us.units)   * 0.085;
+  const theirPool = strength(b.them.units) * 0.085;
+  const myLossRaw    = myPool    * (theirEff/total) * 2 * ORDERS[myOrder].defence * mods().casualty;
+  const theirLossRaw = theirPool * (myEff/total)    * 2 * ORDERS[theirOrder].defence;
+
+  const myLost    = applyLosses(b.us.units,   myLossRaw,    ORDERS[myOrder].losses);
+  const theirLost = applyLosses(b.them.units, theirLossRaw, ORDERS[theirOrder].losses);
+
+  const myBefore = strength(b.us.units) + myLost, theirBefore = strength(b.them.units) + theirLost;
+  b.us.morale   = clamp(b.us.morale   - (myLost/Math.max(1,myBefore))*100*0.80
+                        + (theirLost/Math.max(1,theirBefore))*100*0.35
+                        + ORDERS[myOrder].moraleSelf, 0, 100);
+  b.them.morale = clamp(b.them.morale - (theirLost/Math.max(1,theirBefore))*100*0.80
+                        + (myLost/Math.max(1,myBefore))*100*0.35
+                        + ORDERS[theirOrder].moraleSelf, 0, 100);
+
+  const rec = { round:b.round, myOrder, theirOrder, myLost, theirLost,
+                myMorale:b.us.morale, theirMorale:b.them.morale };
+  b.log.push(rec);
+  b.round++;
+
+  if(b.them.morale <= 20 || strength(b.them.units) < 8) b.over = "won";
+  else if(b.us.morale <= 20 || strength(b.us.units) < 8) b.over = "lost";
+  else if(b.round > b.maxRounds){
+    const gap = b.us.morale - b.them.morale;
+    b.over = gap > 8 ? "won" : gap < -8 ? "lost" : "draw";
+  }
+  return rec;
+}
+/* Auto-resolve: the same resolveRound, driven by a simple counter-picking
+   heuristic. Not a shortcut past the model — a policy over it. */
+function autoOrder(b){
+  const avail = availableOrders(b.us.units, b.terrain, b);
+  if(!avail.length) return "refuse";
+  const likely = PROFILES[b.them.profile].prefer.find(id =>
+    availableOrders(b.them.units, b.terrain, b).includes(id)) || "hold";
+  let best = avail[0], bestScore = -Infinity;
+  avail.forEach(id => {
+    const score = orderEffect(b.us.units, id, b.terrain, b.us.morale, false) * COUNTER[id][likely]
+                  - ORDERS[id].defence * strength(b.us.units) * 0.35;
+    if(score > bestScore){ bestScore = score; best = id; }
+  });
+  // bleeding badly and losing: get out with a company rather than a field
+  if(b.us.morale < 34 && b.us.morale < b.them.morale - 12) return "refuse";
+  return best;
+}
+function autoResolve(b){
+  let guard = 0;
+  while(!b.over && guard < 12){ guard++; resolveRound(b, autoOrder(b)); }
+  if(!b.over){
+    const gap = b.us.morale - b.them.morale;
+    b.over = gap > 8 ? "won" : gap < -8 ? "lost" : "draw";
+  }
+  return b.over;
+}
+/* Casualties are held on the battle object until it ends, then written back
+   to the company once. One transfer, one place. */
+function commitBattle(b){
+  UNIT_IDS.forEach(k => { S.units[k] = Math.max(0, b.us.units[k]); });
+  const lost = b.log.reduce((a,r) => a + r.myLost, 0);
+  if(lost > 0.10 * (strength() + lost)) hurtLieutenants(0.8); else hurtLieutenants(0.35);
+  return lost;
+}
+
+/* ------------------------------------------------------------ sieges - */
+const SIEGE_OPTS = {
+  starve:{id:"starve", name:"Circumvallate and starve",
+    line:"Ring the place, cut the roads, and wait. Cheap in men, dear in time."},
+  sap:{id:"sap", name:"Mine and sap", cost:400,
+    line:"Dig under the wall and bring a span of it down. Costs money and a season."},
+  assault:{id:"assault", name:"Assault the breach",
+    line:"Storm it now, through whatever gap there is. Fast and bloody."},
+  bribe:{id:"bribe", name:"Treat with the garrison",
+    line:"Every garrison has a price. Theirs is high, and it is not a secret afterwards."},
+  abandon:{id:"abandon", name:"Raise the siege",
+    line:"Walk away. Your employer will hear about it."}
+};
+function newSiege(town, faction){
+  return { town, faction, walls: Math.round(rand(55,85)), garrison: Math.round(rand(120,300)),
+           supplies: Math.round(rand(6,11)), relief: 0, seasons: 0, over:null };
+}
+function bribeCost(sg){ return Math.round(sg.garrison * 14 * (1 - 0.04*(S.attrs.cunning - ATTR_BASE))); }
+function siegeAvailable(id, sg){
+  if(id === "assault") return sg.walls < 40;
+  if(id === "sap") return S.treasury >= SIEGE_OPTS.sap.cost;
+  if(id === "bribe") return S.treasury >= bribeCost(sg);
+  return true;
+}
+function siegeWhy(id, sg){
+  if(id === "assault") return `The wall is still standing — ${Math.round(sg.walls)} of it. Bring it down before you storm it.`;
+  if(id === "sap") return `Needs ${fmt(SIEGE_OPTS.sap.cost)} fl. for timber, powder and men who dig.`;
+  if(id === "bribe") return `Their price is ${fmt(bribeCost(sg))} fl. You do not have it.`;
+  return "";
+}
+/* One season of siege work. Returns a line of narration. */
+function resolveSiege(sg, optId){
+  const m = mods();
+  sg.seasons++;
+  let out = "";
+  if(optId === "starve"){
+    const eaten = rand(1.6, 3.0);
+    sg.supplies -= eaten;
+    coin(-rand(60,140), `lines around ${sg.town}`);
+    sg.relief += rand(0.03, 0.07);
+    out = `Another season in the lines at ${sg.town}. They are thinner inside than out.`;
+  } else if(optId === "sap"){
+    coin(-SIEGE_OPTS.sap.cost, `mining the wall at ${sg.town}`);
+    const down = rand(22, 36);
+    sg.walls = Math.max(0, sg.walls - down);
+    sg.relief += rand(0.02, 0.05);
+    out = `The mine went in under the north wall. ${Math.round(down)} feet of it is rubble.`;
+  } else if(optId === "assault"){
+    const odds = clamp(0.30 + (40 - sg.walls)/110 + S.quality*0.30, 0.15, 0.85);
+    const cas = strength() * rand(0.07, 0.16) * m.casualty;
+    applyLosses(S.units, cas, ORDERS.charge.losses);
+    hurtLieutenants(1.3);
+    if(Math.random() < odds){
+      sg.over = "taken";
+      out = `Into the breach at ${sg.town}, and through it. ${fmt(cas)} lances down to do it.`;
+    } else {
+      S.loyalty = clamp(S.loyalty - 6, 0, 100);
+      out = `The assault on ${sg.town} was thrown back off the rubble. ${fmt(cas)} lances for nothing.`;
+    }
+  } else if(optId === "bribe"){
+    const c = bribeCost(sg);
+    coin(-c, `the garrison of ${sg.town}`);
+    if(Math.random() < clamp(0.45 + 0.05*(S.attrs.cunning - ATTR_BASE), 0.2, 0.85)){
+      sg.over = "taken";
+      S.honor = clamp(S.honor - 5, 0, 100);
+      out = `The gate of ${sg.town} was open at dawn and nobody will say who opened it.`;
+    } else {
+      S.honor = clamp(S.honor - 3, 0, 100);
+      out = `They took the money at ${sg.town} and the gate stayed shut. That is the risk of it.`;
+    }
+  } else if(optId === "abandon"){
+    sg.over = "abandoned";
+    out = `You raised the siege of ${sg.town} and marched away.`;
+  }
+
+  if(!sg.over && sg.supplies <= 0){
+    sg.over = "taken";
+    out += ` They came out under a white flag before the week was done.`;
+  }
+  if(!sg.over && Math.random() < sg.relief){
+    sg.over = "relief";
+    out += ` A relief column is on the road.`;
+  }
+  return out;
+}
+
+/* --------------------------------------------------------- campaigns -
+   A condotta is either a season of garrison work or a real campaign of
+   two to four, with staged objectives. The best offer in the game tends to
+   arrive while you are three seasons into somebody else's war. */
+function campaignStages(n){
+  const pool = ["march","battle","siege","battle"];
+  const out = ["march"];
+  while(out.length < n) out.push(pick(["battle","siege","march"]));
+  return out.slice(0, n);
+}
+function breakCampaign(){
+  const c = S.campaign; if(!c) return;
+  rep(S, c.faction, -35);
+  S.honor = clamp(S.honor - 10, 0, 100);
+  post("bad", `You left ${facOf(c.faction).name} in the middle of a campaign. That will be remembered by more people than your employer.`);
+  S.campaign = null; S.siege = null;
+}
 
 /* A rival with high renown pushes rates down — the same market, contested. */
 function undercutFactor(){
@@ -906,12 +1415,17 @@ function rollOffers(){
   S.offers = [];
   const m = mods();
   FACTIONS.forEach(f => {
-    if(Math.random() < 0.55) return;
+    if(Math.random() < 0.42) return;
     const base = rand(6.0, 10.0);
     let pay = base * (1 + S.reputation[f.id]/200) * (1 + effDread()/300)
               * f.payBias * m.pay * undercutFactor();
+    const isCampaign = Math.random() < 0.30;
     S.offers.push({
       faction: f.id,
+      kind: isCampaign ? "campaign" : "short",
+      seasons: isCampaign ? Math.round(rand(2, 4)) : 1,
+      // A campaign pays better per season than garrison work, because it
+      // asks you to be somewhere for a year and take a real field.
       payPerLance: Math.max(pay, 1.0),
       risk: rand(0.03, 0.09) * f.riskBias * m.risk
     });
@@ -931,19 +1445,19 @@ function hurtLieutenants(severity){
 function resolveContract(offer){
   const f = facOf(offer.faction);
   const m = mods();
-  const pay = offer.payPerLance * S.lances;
+  const pay = offer.payPerLance * strength();
   const winChance = 0.4 + 0.4 * S.quality;
   S.underContract = f.id;
   let heavyLoss = false, income;
 
   if(Math.random() < winChance){
     const plunder = pay * rand(0.2, 0.6);
-    const casualties = offer.risk * S.lances * rand(0.3, 0.8) * m.casualty;
+    const casualties = offer.risk * strength() * rand(0.3, 0.8) * m.casualty;
     const decisive = plunder > pay * 0.42;
     rep(S, f.id, rand(5,12) * f.loyaltyMemory);
     FACTIONS.forEach(o => { if(o.id !== f.id) S.reputation[o.id] -= rand(0,3); });
     S.honor = clamp(S.honor + 2, 0, 100);
-    S.lances = Math.max(0, S.lances - casualties);
+    applyLosses(S.units, casualties, ORDERS.hold.losses);
     income = pay + plunder;
     coin(income, `condotta — ${f.short}`);
     post("good", flavor(decisive ? "winBig" : "winNarrow", {fac:f.name}));
@@ -951,10 +1465,10 @@ function resolveContract(offer){
     hurtLieutenants(0.4);
     S.stat.wonBattles++;
   } else {
-    const casualties = offer.risk * S.lances * rand(1.0, 2.2) * m.casualty;
-    heavyLoss = casualties > 0.10 * S.lances;
+    const casualties = offer.risk * strength() * rand(1.0, 2.2) * m.casualty;
+    heavyLoss = casualties > 0.10 * strength();
     S.reputation[f.id] -= rand(3,8);
-    S.lances = Math.max(0, S.lances - casualties);
+    applyLosses(S.units, casualties, ORDERS.refuse.losses);
     income = pay * 0.5;
     coin(income, `condotta — ${f.short} (bad campaign)`);
     post("bad", flavor(heavyLoss ? "lossBad" : "lossNarrow", {fac:f.name}));
@@ -970,7 +1484,7 @@ function resolveRaid(){
   const m = mods();
   const target = pick(FACTIONS.filter(f => f.id !== S.underContract));
   const town = pick(TOWNS);
-  const take = rand(500, 1400) * (1 + S.lances/400) * m.take;
+  const take = rand(500, 1400) * (1 + strength()/400) * m.take;
   coin(take, `composizione — ${town}`);
   S.dread = clamp(S.dread + rand(10,18), 0, 100);
   S.honor = clamp(S.honor - rand(6,14), 0, 100);
@@ -981,8 +1495,8 @@ function resolveRaid(){
   post("gold", flavor(resisted ? "raidResisted" : "raidEasy", {town}));
   post("", `${fmt(take)} florins out of ${town}. ${target.name} will not forget it.`);
   if(resisted){
-    const casualties = rand(0.02,0.06) * S.lances * m.casualty;
-    S.lances = Math.max(0, S.lances - casualties);
+    const casualties = rand(0.02,0.06) * strength() * m.casualty;
+    applyLosses(S.units, casualties, ORDERS.refuse.losses);
     hurtLieutenants(0.5);
   }
   S.stat.raids++;
@@ -1001,7 +1515,7 @@ function resolveRest(isWinter){
 }
 
 function payWages(){
-  coin(-wageBill(), `wages, ${fmt(S.lances)} lances`);
+  coin(-wageBill(), `wages, ${fmt(strength())} lances`);
   if(S.treasury >= 0){ S.negTreasuryStrikes = 0; return true; }
   S.negTreasuryStrikes++;
   return false;
@@ -1014,13 +1528,16 @@ function updateLoyalty(paid, heavyLoss, gotPlunder){
   if(heavyLoss && !gotPlunder) S.loyalty = clamp(S.loyalty - 5, 0, 100);
 }
 function recruit(){
-  if(S.lances >= maxLances()) return;
+  if(strength() >= maxLances()) return;
   const spare = S.treasury - CONFIG.recruitTreasuryBuffer;
   if(spare <= 0) return;
-  const got = Math.max(0, Math.min(CONFIG.recruitRateCap, spare/CONFIG.recruitCostPerLance, maxLances()-S.lances));
+  const per = recruitCostPer();
+  const hole = Math.max(0, startStrength() - strength());
+  const cap = CONFIG.recruitRateCap + hole * 0.15;
+  const got = Math.max(0, Math.min(cap, spare/per, maxLances()-strength()));
   if(got < 1) return;
-  S.lances += got;
-  coin(-got * CONFIG.recruitCostPerLance, `recruitment, ${fmt(got)} lances`);
+  addRecruits(S.units, got);
+  coin(-got * per, `recruitment, ${fmt(got)} lances`);
 }
 function applyForge(){
   if(!has("forge")) return;
@@ -1033,7 +1550,7 @@ function applyForge(){
    name. */
 function promoteFromRanks(){
   if(liveLts().length >= 3) return;
-  if(S.lances < 40) return;
+  if(strength() < 40) return;
   if(Math.random() > 0.45) return;
   const l = makeLieutenant();
   l.loyalty = Math.round(rand(45, 70));
@@ -1053,9 +1570,9 @@ function checkCoalition(){
   const threat = Math.max(0,(d-50)/50) * Math.max(0,(40-S.honor)/40);
   if(threat <= 0) return false;
   if(Math.random() < (0.03 + 0.20*threat) * m.coalition){
-    const survive = Math.min(0.6, S.lances/600 + S.quality*0.2);
+    const survive = Math.min(0.6, strength()/600 + S.quality*0.2);
     if(Math.random() > survive) return true;
-    S.lances *= rand(0.5, 0.75);
+    applyLosses(S.units, strength() * rand(0.25, 0.5));
     S.dread = clamp(S.dread - 20, 0, 100);
     hurtLieutenants(1.4);
     post("bad", "A league of your enemies came for you in the open and you barely held. The company is smaller for it.");
@@ -1080,10 +1597,135 @@ function maybeIncident(){
 function runSeason(action, offerIdx){
   const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
   let result;
-  if(action === "contract" && S.offers[offerIdx]) result = resolveContract(S.offers[offerIdx]);
+  if(action === "campaign") result = advanceCampaign();
+  else if(action === "contract" && S.offers[offerIdx]){
+    const offer = S.offers[offerIdx];
+    if(offer.kind === "campaign"){ acceptCampaign(offer); result = advanceCampaign(); }
+    else result = resolveContract(offer);
+  }
   else if(action === "raid" && !isWinter) result = resolveRaid();
   else result = resolveRest(isWinter);
+  if(result === "await"){
+    /* A battle or a siege now owns the screen. It must be painted here:
+       the season is suspended, so the tail that normally renders never
+       runs, and the player would be left looking at the old view. */
+    save(); render(); return;
+  }
+  finishSeason(result);
+}
 
+/* --------------------------------------------------- campaign machine - */
+function acceptCampaign(offer){
+  const f = facOf(offer.faction);
+  S.campaign = {
+    faction: offer.faction, payPerLance: offer.payPerLance, risk: offer.risk,
+    stages: campaignStages(offer.seasons), done: 0, seasons: offer.seasons
+  };
+  S.underContract = offer.faction;
+  post("gold", `Sealed with ${f.name}: ${offer.seasons} seasons in the field, and their war is now your war.`);
+}
+function completeCampaign(){
+  const c = S.campaign; if(!c) return;
+  const f = facOf(c.faction);
+  rep(S, c.faction, rand(4, 8) * f.loyaltyMemory);
+  S.honor = clamp(S.honor + 6, 0, 100);
+  post("gold", `The campaign for ${f.name} is finished, and finished properly. They know where to find you.`);
+  S.campaign = null; S.siege = null;
+}
+/* One season of a campaign. Returns a normal season result, or "await"
+   when a battle or a siege takes the screen. */
+function advanceCampaign(){
+  const c = S.campaign;
+  if(!c) return resolveRest(false);
+  const f = facOf(c.faction);
+  const stage = c.stages[c.done] || "march";
+  const pay = c.payPerLance * strength();
+  coin(pay, `condotta — ${f.short} (season ${c.done+1} of ${c.seasons})`);
+
+  if(stage === "battle"){
+    S.battle = newBattle({kind:"campaign"});
+    return "await";
+  }
+  if(stage === "siege"){
+    if(!S.siege) S.siege = newSiege(pick(TOWNS), c.faction);
+    return "await";
+  }
+  post("", `On the march for ${f.name}. ${fmt(pay)} florins for a season of bad roads.`);
+  if(Math.random() < 0.4) post("", flavor("camp"));
+  c.done++;
+  if(c.done >= c.stages.length) completeCampaign();
+  /* A season of marching is paid, but it is not plunder, and the men can
+     tell the difference. Wages alone hold a company together slowly. */
+  return {heavyLoss:false, gotPlunder:false};
+}
+/* A battle has ended. Commit its casualties, pay out, move the campaign on,
+   and hand back to the ordinary season tail. */
+function endBattle(){
+  const b = S.battle; if(!b) return;
+  const lost = commitBattle(b);
+  const c = S.campaign;
+  const f = c ? facOf(c.faction) : null;
+  let result = {heavyLoss: lost > 0.10 * (strength() + lost), gotPlunder:false};
+
+  if(b.over === "won"){
+    const plunder = (c ? c.payPerLance * strength() : 400) * rand(0.10, 0.30);
+    coin(plunder, "the field, and what was on it");
+    if(f) rep(S, c.faction, rand(1,3) * f.loyaltyMemory);
+    S.honor = clamp(S.honor + 3, 0, 100);
+    S.dread = clamp(S.dread + rand(2,6), 0, 100);
+    post("good", `${TERRAIN[b.terrain].name}: the field is yours. ${fmt(lost)} lances lost, ${fmt(plunder)} taken off it.`);
+    result.gotPlunder = true;
+  } else if(b.over === "draw"){
+    post("", `${TERRAIN[b.terrain].name}: neither side would leave and neither could stay. ${fmt(lost)} lances for nothing anyone could name.`);
+  } else {
+    if(f) S.reputation[c.faction] -= rand(6, 14);
+    if(c) coin(-c.payPerLance * strength() * 0.55, `pay withheld after the field`);
+    S.loyalty = clamp(S.loyalty - 3, 0, 100);
+    post("bad", `${TERRAIN[b.terrain].name}: you lost the field. ${fmt(lost)} lances, and the road back.`);
+  }
+  S.battle = null;
+  if(c){ c.done++; if(c.done >= c.stages.length) completeCampaign(); }
+  finishSeason(result);
+}
+/* One season of siege work, then either continue or resolve. */
+function siegeAction(optId){
+  const sg = S.siege; if(!sg) return;
+  if(S.campaign){
+    const f = facOf(S.campaign.faction);
+    coin(S.campaign.payPerLance * strength() * 0.55, `condotta — ${f.short} (before ${sg.town})`);
+  }
+  const line = resolveSiege(sg, optId);
+  post(sg.over === "taken" ? "gold" : sg.over ? "bad" : "", line);
+  let result = {heavyLoss:false, gotPlunder:false};
+
+  if(sg.over === "relief"){
+    S.battle = newBattle({kind:"relief", ratio: rand(0.8, 1.2)});
+    S.siege = null;
+    render(); return;
+  }
+  if(sg.over === "taken"){
+    const c = S.campaign, f = c ? facOf(c.faction) : null;
+    const plunder = rand(280, 820) * (1 + strength()/400);
+    coin(plunder, `the sack of ${sg.town}`);
+    S.dread = clamp(S.dread + rand(6,12), 0, 100);
+    if(f) rep(S, c.faction, rand(2,5) * f.loyaltyMemory);
+    post("gold", `${sg.town} is taken. ${fmt(plunder)} florins out of it, and your name carried further than the money.`);
+    result.gotPlunder = true;
+    S.siege = null;
+    if(c){ c.done++; if(c.done >= c.stages.length) completeCampaign(); }
+  } else if(sg.over === "abandoned"){
+    const c = S.campaign;
+    if(c){ rep(S, c.faction, -18); S.honor = clamp(S.honor - 4, 0, 100); }
+    S.siege = null;
+    if(c){ c.done++; if(c.done >= c.stages.length) completeCampaign(); }
+  }
+  finishSeason(result);
+}
+
+/* Everything after the season's action resolves. Split out so a battle or
+   a siege can suspend the season, take over the screen, and hand back to
+   exactly the same tail — rather than a second copy of it that drifts. */
+function finishSeason(result){
   FACTIONS.forEach(f => { S.reputation[f.id] *= CONFIG.repDecay; });
   S.dread *= CONFIG.dreadDecay;
 
@@ -1120,7 +1762,7 @@ function runSeason(action, offerIdx){
   if(!S.over){
     rollOffers();
     pendingIncident = maybeIncident();
-  } else { S.offers = []; pendingIncident = null; }
+  } else { S.offers = []; pendingIncident = null; S.battle = null; S.siege = null; }
   save();
   render();
   if(pendingIncident) openSheet(sheetIncident);
@@ -1130,7 +1772,7 @@ function runSeason(action, offerIdx){
 function chipsHTML(){
   const rows = [
     ["Treasury", `${fmt(S.treasury)} fl.`, S.treasury < 0],
-    ["Lances", fmt(S.lances), S.lances < S.startLances*0.3],
+    ["Strength", fmt(strength()), strength() < startStrength()*0.3],
     ["Loyalty", fmt(S.loyalty), S.loyalty < 25],
     ["Dread", fmt(effDread()), false],
     ["Honor", fmt(S.honor), S.honor < 20],
@@ -1154,6 +1796,25 @@ function affordableInvestments(){
 function viewField(){
   const isWinter = (S.turn % CONFIG.seasonsPerYear) === WINTER_IDX;
   let h = "";
+
+  /* Under contract for a campaign: that is the season's work, and the only
+     other choice is to walk away from it. */
+  if(S.campaign){
+    const c = S.campaign, f = facOf(c.faction);
+    const stage = c.stages[c.done] || "march";
+    const names = {march:"On the march", battle:"A field to be fought", siege:"A town to be taken"};
+    h += `<div class="camp-strip"><span class="main">
+      <span class="t">${f.name} &mdash; season ${c.done+1} of ${c.seasons}</span>
+      <span class="s">${names[stage]}. ${fmt(Math.round(c.payPerLance*strength()))} fl. the season.</span></span></div>`;
+    h += `<section class="sec"><div class="btnrow">
+      <button class="btn primary" data-a="campaign">${stage === "march" ? "March on" : stage === "battle" ? "Take the field" : "Sit down before the walls"}</button>
+      <button class="btn ghost" data-a="breakcamp">Break the contract</button>
+    </div>
+    <p class="lede">Breaking it costs you badly with ${f.name}, and with everyone who hears of it.</p></section>`;
+    h += `<section class="sec"><h2>The account</h2><div class="panel">${journalHTML(8)}</div></section>`;
+    return h;
+  }
+
   if(isWinter){
     h += `<section class="sec"><h2>Winter quarters</h2>
       <p class="lede">No campaigning in winter. The passes are shut and the country has nothing left to give.
@@ -1167,12 +1828,15 @@ function viewField(){
       const uc = undercutFactor();
       h += S.offers.map((o,i) => {
         const f = facOf(o.faction);
-        const pay = Math.round(o.payPerLance * S.lances);
+        const pay = Math.round(o.payPerLance * strength());
         const top = S.rivals.slice().sort((a,b)=>b.renown-a.renown)[0];
+        const camp = o.kind === "campaign";
         return `<button class="offer" data-a="contract" data-v="${i}">
-          <span class="pay">${fmt(pay)} fl.</span>
-          <span class="t">${f.name}</span>
-          <span class="s">A condotta for the season. Risk of the field: ${Math.round(o.risk*100)}%.</span>
+          <span class="pay">${fmt(pay)} fl.${camp ? "<br><small style=\"color:var(--dim)\">a season</small>" : ""}</span>
+          <span class="t">${f.name}${camp ? ` &mdash; ${o.seasons} seasons` : ""}</span>
+          <span class="s">${camp
+            ? `A campaign. Marches, a field or two, and likely a town to sit down before. Risk: ${Math.round(o.risk*100)}%.`
+            : `Garrison and escort work for the season. Risk of the field: ${Math.round(o.risk*100)}%.`}</span>
           ${uc < 0.97 && top ? `<span class="undercut">${esc(top.name)} is underbidding you — rates are down.</span>` : ""}
         </button>`;
       }).join("");
@@ -1304,10 +1968,86 @@ function viewAccount(){
   return h;
 }
 
+/* ------------------------------------------------------ battle view - */
+function viewBattle(){
+  const b = S.battle, t = TERRAIN[b.terrain];
+  const avail = availableOrders(b.us.units, b.terrain, b);
+  const p = PROFILES[b.them.profile];
+  let h = `<section class="sec"><h2>${t.name}</h2>
+    <p class="lede">${t.note} Against ${p.name} — ${p.note.toLowerCase()}</p>
+    <div class="bfwrap">${battleCanvasHTML("bfield")}</div>
+    <div class="panel" style="margin-top:10px">
+      <div class="kv"><span class="k">Round</span><span class="v">${Math.min(b.round,b.maxRounds)} of ${b.maxRounds}</span></div>
+      <div class="kv"><span class="k">Your strength &middot; heart</span><span class="v">${fmt(strength(b.us.units))} &middot; ${Math.round(b.us.morale)}</span></div>
+      <div class="kv"><span class="k">Theirs</span><span class="v">${fmt(strength(b.them.units))} &middot; ${Math.round(b.them.morale)}</span></div>
+    </div></section>`;
+
+  if(b.log.length){
+    const r = b.log[b.log.length-1];
+    h += `<section class="sec"><div class="panel"><p class="lede" style="margin:0">
+      Last round you ${ORDERS[r.myOrder].verb}; they ${ORDERS[r.theirOrder].verb}.
+      You lost ${fmt(r.myLost)}, they lost ${fmt(r.theirLost)}.</p></div></section>`;
+  }
+
+  h += `<section class="sec"><h2>Your order</h2>`;
+  h += ORDER_IDS.map(id => {
+    const o = ORDERS[id], ok = avail.includes(id);
+    const mult = TERRAIN[b.terrain][id];
+    const ground = mult >= 1.15 ? "good ground for it" : mult <= 0.9 ? "bad ground for it" : "fair ground";
+    return `<button class="row" data-a="order" data-v="${id}"${ok?"":" disabled"}>
+      <span class="main"><span class="t">${o.name}</span>
+      <span class="s">${ok ? `${o.line} <em style="color:var(--dim)">${ground}.</em>` : o.why}</span></span></button>`;
+  }).join("");
+  h += `<div class="btnrow">
+      <button class="btn ghost" data-a="reserve"${b.reserveUsed?" disabled":""}>${b.reserveUsed?"Reserve spent":"Commit the reserve"}</button>
+      <button class="btn ghost" data-a="autobattle">Let them handle it</button>
+    </div></section>`;
+  return h;
+}
+
+/* ------------------------------------------------------- siege view - */
+function viewSiege(){
+  const sg = S.siege;
+  let h = `<section class="sec"><h2>The siege of ${esc(sg.town)}</h2>
+    <p class="lede">Season ${sg.seasons+1} before the walls.</p>
+    <div class="panel">
+      <div class="kv"><span class="k">Walls</span><span class="v">${Math.round(sg.walls)}</span></div>
+      <div class="kv"><span class="k">Garrison</span><span class="v">${fmt(sg.garrison)}</span></div>
+      <div class="kv"><span class="k">Their stores</span><span class="v">${sg.supplies > 0 ? Math.max(1,Math.round(sg.supplies)) + " seasons" : "gone"}</span></div>
+      <div class="kv"><span class="k">Word of a relief column</span><span class="v">${Math.round(sg.relief*100)}%</span></div>
+    </div></section>`;
+  h += `<section class="sec"><h2>How you take it</h2>`;
+  h += Object.keys(SIEGE_OPTS).map(id => {
+    const o = SIEGE_OPTS[id], ok = siegeAvailable(id, sg);
+    const price = id === "sap" ? ` &middot; ${fmt(o.cost)} fl.` : id === "bribe" ? ` &middot; ${fmt(bribeCost(sg))} fl.` : "";
+    return `<button class="row" data-a="siege" data-v="${id}"${ok?"":" disabled"}>
+      <span class="main"><span class="t">${o.name}${price}</span>
+      <span class="s">${ok ? o.line : siegeWhy(id, sg)}</span></span></button>`;
+  }).join("");
+  h += `</section>`;
+  return h;
+}
+
 function render(){
   const app = $("#app");
   if(!S){ app.innerHTML = viewTitle(); paintBanners(); return; }
   if(S.over){ app.innerHTML = viewOver(); paintBanners(); return; }
+  if(S.battle){
+    app.innerHTML = `<div id="hud"><div class="hud-top">
+        ${bannerHTML("hudBanner", S.banner, 2, "hud-banner")}
+        <div class="coname">A field near ${esc(pick(TOWNS))}<small>${TERRAIN[S.battle.terrain].name}</small></div>
+        <div class="date"><b>${seasonOf(S.turn)}</b>${yearOf(S.turn)}</div>
+      </div></div><main>${viewBattle()}</main>`;
+    paintBanners(); paintBattle(); return;
+  }
+  if(S.siege){
+    app.innerHTML = `<div id="hud"><div class="hud-top">
+        ${bannerHTML("hudBanner", S.banner, 2, "hud-banner")}
+        <div class="coname">Before ${esc(S.siege.town)}<small>Captain ${esc(S.captainName)}</small></div>
+        <div class="date"><b>${seasonOf(S.turn)}</b>${yearOf(S.turn)}</div>
+      </div><div class="chips">${chipsHTML()}</div></div><main>${viewSiege()}</main>`;
+    paintBanners(); return;
+  }
   const body = S.tab === "company" ? viewCompany()
              : S.tab === "captain" ? viewCaptain()
              : S.tab === "world"   ? viewWorld()
@@ -1335,7 +2075,7 @@ function viewTitle(){
         <h1>The Company</h1>
         <input class="name" id="cname" placeholder="Your captain's name" maxlength="30" value="${esc(build.name||"")}">
         ${BUILDS.map(b => `<button class="build${build.pick===b.id?" sel":""}" data-a="pickbuild" data-v="${b.id}">
-          <span class="t">${b.name}</span><span class="s">${b.blurb} &mdash; ${b.lances} lances, ${fmt(b.treasury)} fl.</span></button>`).join("")}
+          <span class="t">${b.name}</span><span class="s">${b.blurb} &mdash; ${strength(b.units)} lances, ${fmt(b.treasury)} fl.</span></button>`).join("")}
         <div class="btnrow" style="margin-top:12px">
           <button class="btn ghost" data-a="titleback">Back</button>
           <button class="btn primary" data-a="step2">Next</button></div></div>`;
@@ -1398,7 +2138,7 @@ function viewOver(){
     <p>${esc(S.over.text)}</p>
     <p class="lede">${fmt(S.stat.seasons)} seasons on the road. ${fmt(S.stat.contracts)} contracts,
       ${fmt(S.stat.raids)} raids, ${fmt(S.stat.incidents)} matters settled out of the saddle.
-      Ended with ${fmt(S.treasury)} florins and ${fmt(S.lances)} lances.</p>
+      Ended with ${fmt(S.treasury)} florins and ${fmt(strength())} lances.</p>
     <div class="btnrow"><button class="btn primary" data-a="newco">Start a new company</button></div></div>`;
 }
 
@@ -1600,6 +2340,23 @@ document.addEventListener("click", e => {
       save(); closeSheet(); render(); break; }
 
     case "contract": runSeason("contract", +v); break;
+    case "campaign": runSeason("campaign"); break;
+    case "breakcamp": breakCampaign(); save(); render(); break;
+    case "order": {
+      const b = S.battle; if(!b || b.over) break;
+      resolveRound(b, v);
+      if(b.over) endBattle(); else { save(); render(); }
+      break; }
+    case "reserve": {
+      const b = S.battle; if(!b || b.reserveUsed) break;
+      b.reserveUsed = true; b.us.committed = true;
+      post("", "The reserve went in.");
+      save(); render(); toast("Reserve committed — this round counts double.");
+      break; }
+    case "autobattle": {
+      const b = S.battle; if(!b) break;
+      autoResolve(b); endBattle(); break; }
+    case "siege": siegeAction(v); break;
     case "raid": runSeason("raid"); break;
     case "rest": runSeason("rest"); break;
   }

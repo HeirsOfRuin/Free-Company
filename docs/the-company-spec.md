@@ -157,9 +157,111 @@ three vertical bars, and a key that read as a lollipop. It also caught a
 swallowtail that cut a wedge looking like image corruption, and charges
 that vanished into divided fields. None of those were visible in the code.
 
-## Not yet built (Stage 2)
+---
 
-Multi-season campaigns, field battles with a real tactical layer, sieges,
-and the unit composition that replaces the scalar `lances`. Contracts are
-deliberately still one season, because building multi-season contracts
-before the campaign system would be work thrown away.
+# Built — Stage 2: the war layer
+
+## Composition replaced the scalar
+
+`S.lances` is gone. The company is men-at-arms (upkeep 8.0), mounted archers
+(5.0) and brigands (2.6); `strength()` is the one derived total and only
+`applyLosses`/`addRecruits` write to the counts. The default 60/70/70 comes
+to 1,012 upkeep against the old scalar's 1,000, so the swap did not move the
+ledger on its own. Saves migrate by splitting the old scalar into the
+starting build's ratio.
+
+## The counterplay triangle, measured
+
+Volley beats hold, charge beats volley, hold beats charge — braced men stop
+horses, which was the White Company's actual trick. Terrain rotates it.
+Measured over 400 battles per cell at even numbers, win %:
+
+| | vs condottiere | vs militia | vs levy | hills | defile |
+|---|---|---|---|---|---|
+| hold | **74** | 34 | **100** | **91** | **78** |
+| volley | 25 | **87** | 2 | **92** | 11 |
+| charge | 65 | 2 | 37 | 7 | **77** |
+| refuse | 0 win, but 79–84% of the company kept |
+| **auto** | 75 | **95** | 100 | 91 | 77 |
+
+Every enemy has a right answer, every terrain moves it, and the adaptive
+policy beats all four fixed ones. `refuse` never wins and is not meant to:
+it converts a rout into an orderly defeat with the company intact.
+
+Enemy behaviour is what makes this readable. A condottiere counters what you
+did last round. A militia holds. A feudal levy charges into a defile because
+a feudal levy would.
+
+## Battles are rare and can be waved through
+
+Only campaign battles, siege relief and the coalition open the tactical
+layer — roughly four to five a run. Every battle carries "let them handle
+it", which is **not a second code path**: it runs the same `resolveRound()`
+under a counter-picking policy. A battle fought by hand, a battle waved
+through, and a battle run ten thousand times by a measurement harness are
+the same code.
+
+## Contracts and campaigns sit side by side
+
+Short garrison work (one season) alongside campaigns (2–4 seasons, staged
+march → battle → siege). Campaigns pay the going rate with no premium — the
+upside is plunder and standing, the cost is being committed while a better
+offer arrives. Breaking one costs about 35 reputation and 10 honor.
+
+## The battle diagram
+
+Both banners facing, unit strips whose length tracks surviving counts, a
+morale bar per side, terrain tinted behind. The strips are drawn from
+`b.us.units` and `b.them.units` — the same objects `resolveRound` mutates —
+so what thins on screen is what decides the fight. No display copy exists.
+
+## Balance after Stage 2
+
+The band Stage 1 established, re-measured through the shipped code over 250
+full 40-season runs per policy:
+
+| Policy | Win | Mutiny | Stage 1 target |
+|---|---|---|---|
+| Mixed, best rate | 9.6% | 2.0% | 9–11% win |
+| Loyal to Florence | 14.8% | 5.6% | above mixed |
+| Loyal to Pisa | 7.2% | 12.4% | below mixed |
+| Mixed, no investments | 1.2% | 0% | ~1% |
+| Short contracts only | 6.4% | 23.6% | — |
+
+Win rates and the investment ablation (8x) hold. The faction ordering holds.
+**One honest divergence: mutiny for unrestricted play is 2% where Stage 1
+had ~10%**, because a signed campaign is reliable multi-season income and
+takes the cash-flow risk out of a run that always has work available.
+Restricting yourself — short contracts only, or one employer — puts it back
+(12–24%). That is a real consequence of adding campaigns rather than a
+tuning miss, and it is recorded here rather than papered over.
+
+Battle outcomes are scaled so the adaptive policy wins about 60% of fields,
+the rate the old `0.4 + 0.4*quality` formula gave at default quality and the
+rate the whole economy was calibrated against.
+
+## What measurement caught that reading the code did not
+
+- **`refuse` appeared to be a perfect stalemate button** across thousands of
+  measured battles — 0 wins, 0 losses, 100% of the company kept. It was
+  `NaN`: `TERRAIN` had no `refuse` multiplier, so every value in that branch
+  was arithmetic failure wearing the costume of a clean balance result.
+  There is now a guard that refuses to fail silently.
+- **Campaign acceptance lived in the click handler**, so every non-UI path —
+  the measurement harness, auto-play — silently treated a campaign as a
+  one-season contract. Battles never happened and nobody noticed until the
+  harness reported `battles: 0`. The decision moved into the engine.
+- **Siege seasons paid nothing** while wages ran in full, making any long
+  siege a guaranteed bankruptcy; it read as "campaigns cause mutiny".
+- **`runSeason` returned early without rendering** when a battle opened, so
+  the battle screen never appeared. Invisible to headless simulation, which
+  drives state directly; caught in one click-through.
+- **A phone screenshot** showed a volley described as "fair ground" on
+  terrain that penalises it, and an enemy morale bar sharing the archers'
+  gold so it read as a fourth unit block.
+
+## Still not built
+
+No naval or river actions, no multi-company alliances, and the captain does
+not age. Creature charges (lion, eagle) remain cut from the heraldry
+generator until they get a grid large enough to read on.
