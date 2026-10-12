@@ -103,6 +103,24 @@ make your name worth something.
 - A report for every fight, including the ones you did not command
 - Saves in-browser, plus copy-out/paste-in for moving a company between devices
 
+## 3b. The same build is also the web app
+
+One build, two shelves. `make-itch-zip.sh` packages exactly the files GitHub
+Pages serves, so there is no separate web-app build to maintain.
+
+- **https://heirsofruin.github.io/Free-Company/** — top-level page. Installs to
+  a phone home screen, runs offline, keeps saves.
+- **itch.io** — the same files in a frame on itch's domain. Playable, and the
+  service worker still registers and takes control there (measured), so it
+  caches for offline. But it is **not installable**: a browser only offers
+  "Add to Home Screen" for a top-level page, and an embedded game is not one.
+
+So itch is for being found, and the Pages copy is for being kept. Put the link
+on the itch page — itch has a Links field on the edit screen:
+
+> **Install it to your phone:** https://heirsofruin.github.io/Free-Company/ —
+> same game, opens full screen, works with the network off.
+
 ## 4. Known constraints, and what the page should say
 
 **Saves live in browser storage.** On itch the game runs in a frame on a
