@@ -200,7 +200,13 @@ textarea.blob{width:100%;min-height:90px;background:var(--panel);border:1px soli
 .title-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:26px 20px;text-align:center}
 .title-wrap h1{font-size:38px;color:var(--parchment)}
 .title-wrap .sub{color:var(--muted);font-size:13.5px;margin:10px 0 26px}
-.title-wrap .btn{margin-bottom:10px}
+/* Direct children only. .btn carries flex:1 for .btnrow, where buttons share
+   a row; as a direct child of this flex *column* that same rule made the two
+   title-screen buttons grow to fill the screen. The creation steps put their
+   buttons in a .btnrow, so they keep the sharing behaviour. */
+.title-wrap > .btn{flex:none;margin-bottom:10px}
+.title-wrap .nostore{color:var(--gold-hi);font-size:12px;line-height:1.5;margin:0 0 14px;
+  border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;background:var(--panel)}
 .build{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px;margin-bottom:9px;
   text-align:left;cursor:pointer;color:inherit;width:100%;display:block}
 .build.sel{border-color:var(--gold);background:var(--panel-hi)}
@@ -970,16 +976,27 @@ let build = null;
 let sheetFn = null;
 let pendingIncident = null;
 
-function makeLieutenant(){
-  const name = `${pick(FIRST)} ${pick(LAST)}`;
+/* Dealt, not rolled independently: four men drawn at random from eight traits
+   and twenty-two surnames repeated often enough that the opening roster looked
+   like a generator bug. Each new man avoids what the company already has, and
+   falls back to the full table once there is nothing left to avoid. */
+function makeLieutenant(existing){
+  const have = Array.isArray(existing) ? existing.filter(Boolean) : [];
+  const freeTraits = TRAITS.filter(t => !have.some(l => l.trait === t.id));
+  const freeLast = LAST.filter(n => !have.some(l => (l.name || "").endsWith(n)));
   return {
-    name,
+    name: `${pick(FIRST)} ${pick(freeLast.length ? freeLast : LAST)}`,
     byname: Math.random() < 0.45 ? pick(BYNAME) : null,
-    trait: pick(TRAITS).id,
+    trait: pick(freeTraits.length ? freeTraits : TRAITS).id,
     skill: Math.round(rand(2, 5)),
     loyalty: Math.round(rand(55, 85)),
     alive: true
   };
+}
+function makeLieutenants(n){
+  const out = [];
+  for(let i = 0; i < n; i++) out.push(makeLieutenant(out));
+  return out;
 }
 function makeRival(){
   return {
@@ -1008,7 +1025,7 @@ function newGame(captainName, b, attrs, bannerSeed, difficulty){
     kit: {armour:"mail", horse:"rouncey", blade:"arming", wardrobe:"plain"},
     investments: [],
     banner: bannerSeed || randomSeed(),
-    lieutenants: Array.from({length:4}, makeLieutenant),
+    lieutenants: makeLieutenants(4),
     rivals: Array.from({length:3}, makeRival),
     offers: [], underContract: null,
     campaign: null, siege: null, battle: null,
@@ -1029,10 +1046,23 @@ function newGame(captainName, b, attrs, bannerSeed, difficulty){
 }
 
 /* ------------------------------------------------------- persistence - */
+
+/* Storage can be refused outright, not merely be full: a cross-site frame
+   (itch.io serves the game in one), Safari with all cookies blocked, a
+   locked-down browser. Reading localStorage then *throws*, and an unguarded
+   read on the title screen took the whole page down with it — a black
+   rectangle, no message. Every read goes through here, so a refusal costs
+   you saves and says so. */
+const STORAGE_OK = (() => {
+  try{ localStorage.setItem("__probe", "1"); localStorage.removeItem("__probe"); return true; }
+  catch(e){ return false; }
+})();
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
 function save(){ try{ localStorage.setItem(CONFIG.saveKey, JSON.stringify(S)); }catch(e){} }
 function load(){
   try{
-    const raw = localStorage.getItem(CONFIG.saveKey);
+    const raw = lsGet(CONFIG.saveKey);
     if(!raw) return false;
     const o = JSON.parse(raw);
     const m = migrate(o);
@@ -1053,7 +1083,7 @@ function migrate(o){
     o.kit = {armour:"mail", horse:"rouncey", blade:"arming", wardrobe:"plain"};
     o.investments = [];
     o.banner = randomSeed();
-    o.lieutenants = Array.from({length:4}, makeLieutenant);
+    o.lieutenants = makeLieutenants(4);
     o.rivals = Array.from({length:3}, makeRival);
     o.difficulty = "captain";
     o.underContract = null;
@@ -1103,7 +1133,7 @@ function repair(o){
   if(!o.attrs) o.attrs = Object.fromEntries(ATTRS.map(a => [a.id, ATTR_BASE]));
   if(!o.kit) o.kit = {armour:"mail", horse:"rouncey", blade:"arming", wardrobe:"plain"};
   if(!Array.isArray(o.investments)) o.investments = [];
-  if(!Array.isArray(o.lieutenants)) o.lieutenants = Array.from({length:4}, makeLieutenant);
+  if(!Array.isArray(o.lieutenants)) o.lieutenants = makeLieutenants(4);
   if(!Array.isArray(o.rivals)) o.rivals = Array.from({length:3}, makeRival);
   if(!o.banner) o.banner = randomSeed();
   if(!o.difficulty) o.difficulty = "captain";
@@ -1829,7 +1859,7 @@ function promoteFromRanks(){
   if(liveLts().length >= 3) return;
   if(strength() < 40) return;
   if(Math.random() > 0.45) return;
-  const l = makeLieutenant();
+  const l = makeLieutenant(liveLts());
   l.loyalty = Math.round(rand(45, 70));
   S.lieutenants.push(l);
   post("", `${ltName(l)} was raised out of the ranks to corporal. He has the men behind him, which is most of it.`);
@@ -2673,10 +2703,13 @@ function viewTitle(){
         <button class="btn ghost" data-a="step2">Back</button>
         <button class="btn primary" data-a="startgame">Take the road</button></div></div>`;
   }
-  const hasSave = !!localStorage.getItem(CONFIG.saveKey);
+  const hasSave = !!lsGet(CONFIG.saveKey);
   return `<div class="title-wrap">
     <h1>The Company</h1>
     <p class="sub">Italy, 1360s. Find work, hold your men together,<br>decide what your name is worth.</p>
+    ${STORAGE_OK ? "" : `<p class="nostore">This browser is refusing to store anything for the page, so nothing
+      will be kept between sessions. Opening the game in its own tab usually fixes it. You can still play, and
+      you can still copy a company out by hand from the menu.</p>`}
     ${hasSave ? `<button class="btn primary" data-a="continue">Continue</button>` : ""}
     <button class="btn${hasSave?" ghost":" primary"}" data-a="newco">A new company</button>
     <button class="btn ghost" data-a="slots" data-v="load">Load a saved company</button></div>`;
@@ -2830,7 +2863,9 @@ document.addEventListener("click", e => {
     case "pickbanner": build.banner = v; render(); break;
     case "pickdiff": build.difficulty = v; render(); break;
     case "startgame": {
-      const name = (build.name||"").trim() || "the Captain";
+      // Leaving the field blank used to read "Captain The Captain" across the
+      // whole run. The name tables are right there.
+      const name = (build.name||"").trim() || `${pick(FIRST)} ${pick(LAST)}`;
       const b = BUILDS.find(x => x.id === build.pick) || BUILDS[0];
       newGame(name, b, build.attrs, build.banner, build.difficulty);
       build = null; render();
@@ -2971,9 +3006,12 @@ document.addEventListener("click", e => {
 /* --------------------------------------------------------------- boot - */
 if(!load()) S = null;
 render();
-if("serviceWorker" in navigator && location.protocol.startsWith("http")){
-  navigator.serviceWorker.register("sw.js").catch(() => {});
-}
+/* The getter itself throws in a sandboxed frame, so .catch() never sees it:
+   an uncaught error on every load of an embedded copy. */
+try{
+  if("serviceWorker" in navigator && location.protocol.startsWith("http"))
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+}catch(e){}
 </script>
 </body>
 </html>

@@ -446,6 +446,43 @@ play is preference with fallback, not purity.
   was orphaned measurement processes of my own, at load average 27. Check the
   machine before the code.
 
+## Release pass — what a public upload needed
+
+Four things found by looking at the game on a phone-sized screen and by
+running it the way itch.io runs it (a cross-site frame), none of which a code
+read would have surfaced:
+
+- **The two title-screen buttons grew to fill the whole screen.** `.btn`
+  carries `flex:1` so buttons share a row inside `.btnrow`; the title screen
+  puts them as direct children of a flex *column*, where the same rule makes
+  them grow vertically. Roughly 650px and 600px tall on a 390x844 screen —
+  the first thing any new player saw. Fixed with a child selector so
+  `.btnrow` keeps its sharing behaviour.
+- **A browser that refuses storage took the whole page down.** One unguarded
+  `localStorage.getItem` on the title screen. Reading storage *throws* (it
+  does not return null) in a cross-site frame with site data blocked, in
+  Safari with all cookies blocked, and in any sandboxed frame without
+  `allow-same-origin`. Measured: a black rectangle, no text, no buttons. Now
+  every read goes through `lsGet`, and `STORAGE_OK` puts a line on the title
+  screen saying saves will not be kept and how to fix it. Verified playable
+  with storage denied.
+- **`navigator.serviceWorker` throws in a sandboxed frame** — the getter
+  itself, so the `.catch()` on `register()` never saw it. Harmless (it fired
+  after render) but it was an uncaught error on every embedded load.
+- **A blank name produced "Captain The Captain"** for the whole run, in a
+  game about what your name is worth. It now draws from the same name tables
+  the lieutenants and rivals use.
+
+And one generator smell: four lieutenants rolled independently from eight
+traits and twenty-two surnames shared a trait often enough to look like a bug
+on the opening roster. They are now dealt rather than rolled — each man avoids
+what the company already has. Over 500 fresh companies: 0 duplicate traits, 0
+duplicate surnames. Traits are display-only (one call site), so this moves no
+numbers.
+
+`tools/make-itch-zip.sh` builds the upload; `docs/itch-release.md` holds the
+settings, the page copy and the constraints worth stating on the page.
+
 ## Still not built
 
 No naval or river actions, no multi-company alliances, and the captain does
