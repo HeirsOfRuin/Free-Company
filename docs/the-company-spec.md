@@ -524,6 +524,30 @@ player reads.
 shipped build, driving the real functions, so the store art cannot drift from
 the game either.
 
+## Every charge sat left of centre
+
+Noticed by eye, confirmed by arithmetic. The charge offset was
+`Math.floor((BW - 11)/2)` = 5 on a 22-cell grid, putting an 11-cell device in
+columns 5..15 — centre 10 against a grid centre of 10.5. Then the staff paints
+over the first 0.8 of a cell down the hoist, so the centre of the *visible*
+field is nearer 11.4. Every device in the game was landing about **1.4 cells
+left** of where the eye looks for it: at the cover's scale, 28 real pixels.
+
+Fixed by centring on the visible field rather than the grid —
+`Math.round((STAFF_CELLS + BW - gw) / 2)`, with the staff width now a named
+constant that both the charge placement and the staff itself read, so they
+cannot disagree. Charge centre is now 11.0 against a field centre of 11.4,
+which is the closest an odd-width device can sit on an even grid without
+breaking the pixel alignment the whole generator depends on.
+
+Vertically it is deliberately half a cell high: an 11-cell device cannot be
+centred on 28 cells either way, and high reads as placement where low reads as
+error.
+
+Worth noting what the measurement alone would have said. The charge *was*
+centred — on the grid. It took looking at the picture to see that the grid was
+not the thing it needed to be centred on.
+
 ## Still not built
 
 No naval or river actions, no multi-company alliances, and the captain does

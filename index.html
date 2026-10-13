@@ -851,6 +851,8 @@ function bannerSpec(seed){
   return { t1, t2, division, charge: rpick(r, CHARGE_IDS), chargeT: rpick(r, pool) };
 }
 const BW = 22, BH = 28;  // banner grid, in cells
+const STAFF_CELLS = 0.8;  // the staff down the hoist, in cells — it covers
+                          // part of the field, so charge centring allows for it
 function drawBanner(canvas, seed, scale){
   const spec = bannerSpec(seed);
   const ctx = canvas.getContext("2d");
@@ -877,18 +879,31 @@ function drawBanner(canvas, seed, scale){
       cell(x,y,col);
     }
   }
-  // charge, centred
+  /* Charge placement. Two things were off here, and together they put every
+     device visibly left of where the eye looks for it.
+
+     The width: floor((22-11)/2) = 5 puts an 11-wide charge in columns 5..15,
+     whose centre is 10 against a grid centre of 10.5 — and then the staff
+     paints over the first 0.8 of a cell, so the centre of the *visible* field
+     is nearer 11.4. The charge was landing about 1.4 cells to the left, which
+     at the cover's scale is 28 real pixels.
+
+     The height: a charge is placed a touch above true centre on purpose. An
+     11-cell device on a 28-cell field cannot be exactly centred either way,
+     and high reads as deliberate where low reads as a mistake. */
   const g = CHARGES[spec.charge];
-  const ox = Math.floor((BW - 11)/2), oy = Math.floor((BH - 11)/2);
+  const gw = g[0].length, gh = g.length;
+  const ox = Math.round((STAFF_CELLS + BW - gw) / 2);
+  const oy = Math.floor((BH - gh) / 2);
   for(let y=0;y<g.length;y++){
     for(let x=0;x<g[y].length;x++){
       if(g[y][x] !== "#") continue;
       cell(ox+x, oy+y, TINCTURES[spec.chargeT]);
     }
   }
-  // staff
+  // staff — STAFF_CELLS wide, and the charge above is centred against it
   ctx.fillStyle = "#4A3B28";
-  ctx.fillRect(0, 0, Math.max(1, Math.floor(scale*0.8)), BH*scale);
+  ctx.fillRect(0, 0, Math.max(1, Math.floor(scale*STAFF_CELLS)), BH*scale);
   return spec;
 }
 /* Draw a banner into an existing context at an offset, for the battle
