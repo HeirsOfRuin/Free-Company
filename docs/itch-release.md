@@ -56,52 +56,96 @@ dark ground, title set in Cinzel.
 
 ## 3. Page copy
 
-**Title:** The Company
+Everything below is checked against the shipped build: 5 employers, 8
+doctrines, 6 investments, 4 orders, 5 terrains, 10 incidents, 60 seasons from
+1361 to 1375, 4 endings, 3 difficulties. No claim here is aspirational.
 
-**Tagline:** A free company of mercenaries in Italy, 1360s. Fifteen years to
-make your name worth something.
+### Title
 
-**Description:**
+The Company
 
-> You are a captain of a free company in Italy in the 1360s — one of the
-> mercenary bands that sold war to whoever was paying. You have men, a
-> banner, and no land.
->
-> Fifteen years. Sixty seasons. Each one you take work, ride for your own
-> account, or rest the company. Garrison contracts are safe and pay badly.
-> Campaigns pay well and put you on a field, where you choose ground and
-> orders and live with the result. Towns pay to be left alone, and your name
-> remembers it.
->
-> The men are the game. They have to be paid every season, whether or not
-> anyone hired you. Pay late and loyalty falls; let it fall far enough and a
-> lieutenant takes a third of the company and leaves. Your lieutenants are
-> named men who die and are replaced from the ranks.
->
-> Your employers remember. Florence forgets nothing; Milan breaks faith
-> first. Taking a contract against a former employer costs you with them for
-> the rest of the run. Grow dangerous enough and the cities form a league
-> against you.
->
-> **The run ends four ways:** a commission for life, the company mutinies,
-> a coalition runs you down, or you retire on what you have. Winning is
-> rare — it asks for both money and a reputation, and most careers end
-> short of one of them.
->
-> No installation, no account, no server. It runs in the browser and saves
-> to your device, and it will install to a phone home screen and run with
-> the network off.
+### Short description / tagline
 
-**What's in it:**
+itch shows this under the title, in search results and when the page is
+shared. Keep it under about 120 characters.
 
-- 60 seasons, 15 years, one career
-- Field battles with terrain, orders and a counter triangle — not a dice roll
-- Eight company doctrines, two picks, three tiers each
-- A captain you build: attributes, arms, wardrobe, permanent investments
-- Procedurally generated heraldry — pick a device or roll your own
-- Named lieutenants, rival captains, employers with memories
+> Italy, 1361. You have men, a banner and no land. Fifteen years to make your
+> name worth something.
+
+Alternates:
+
+- A mercenary company in Italy, 1361. The men must be paid every season,
+  whether or not anyone hired you. *(103)*
+- Command a free company in 1360s Italy. Contracts, plunder, loyalty, and one
+  name you cannot buy back. *(101)*
+
+### Full description
+
+**Italy, 1361. You have men, a banner and no land.**
+
+The cities of Italy were rich enough to buy war and unwilling to fight it
+themselves. You are a captain of one of the free companies they bought it
+from — Florence this season, Milan the next, whoever is paying.
+
+Fifteen years. Sixty seasons. One name.
+
+**The season.** Take work, ride for your own account, or rest the company.
+Garrison and escort contracts are safe and pay badly. Campaigns pay well, run
+two to four seasons, and put you on a field. Towns will pay you to be
+somewhere else, and the country remembers that you asked.
+
+**The men.** They are paid every season, whether or not anyone hired you. Pay
+late and loyalty falls; let it fall far enough and a lieutenant takes a third
+of the company and goes. Your lieutenants are named men — they die, and the
+ranks hand you replacements you did not choose. You set the shape of the
+company, and recruiting fills toward it.
+
+**The field.** Choose your ground, then your orders: hold, loose, charge, or
+refuse the flank. Each beats one and loses to another, and the ground changes
+what each is worth — a charge that wins in the open dies in a defile. What you
+may order depends on who you recruited, because a company with no archers
+cannot loose a volley. Specialise in two doctrines out of eight, three steps
+deep, and it begins to fight like your company rather than anyone's.
+
+**Your name.** Five employers, each with a memory. Florence forgets nothing.
+Milan breaks faith first. Sign against a former employer and pay for it with
+them for the rest of the run. Being feared pays — frightened towns offer
+better terms — but a captain who is both feared and without honour is a
+problem the cities can solve together, and a league formed against you does
+not negotiate.
+
+**Your captain.** Four attributes, armour, a horse, a blade, and what you wear
+when you are being looked at. Six permanent investments — a surgeon, a
+paymaster, a herald — each worth more than another fifty men. And a coat of
+arms, chosen from the gallery or rolled from a generator that will not hand
+you anything a herald would refuse.
+
+**How it ends.** Four ways: a commission for life, your own men, a coalition,
+or the road home with whatever you have. Winning asks for money and a
+reputation at the same time, which is why most careers end short of one of
+them. If that reads as unforgiving, begin on Condottiere.
+
+---
+
+**Free.** No account, no ads, no analytics. It runs in your browser and saves
+to your own device; the only thing it fetches from the internet is its fonts.
+
+**It installs.** https://heirsofruin.github.io/Free-Company/ is the same game
+as a web app — add it to a phone home screen and it plays with the network
+off. Saves there and saves here are separate; Export in the menu copies a
+company out as text if you want to move one.
+
+### Optional "what's in it" block
+
+- 60 seasons, 1361 to 1375 — one career, four ways to end it
+- Field battles with ground, orders and a counter triangle, not a dice roll
+- Eight company doctrines, two picks, three steps each
+- A captain you build: attributes, arms, wardrobe, six permanent investments
+- Procedural heraldry that obeys the rule of tincture — pick one or roll it
+- Named lieutenants, rival captains, and five employers with memories
+- Ten incidents that arrive when you have earned them
 - A report for every fight, including the ones you did not command
-- Saves in-browser, plus copy-out/paste-in for moving a company between devices
+- Plays in portrait on a phone, installs to a home screen, runs offline
 
 ## 3b. The same build is also the web app
 
