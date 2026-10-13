@@ -38,7 +38,7 @@ the Google Fonts stylesheet.
 |---|---|
 | Kind of project | **HTML** |
 | Upload | `the-company-itch.zip`, tick **This file will be played in the browser** |
-| Embed | Embed in page, **480 × 820** |
+| Embed | Embed in page, **480 × 820** (measured, see below) |
 | Mobile friendly | **On**, orientation **portrait** |
 | Fullscreen button | **On** |
 | Automatically start on page load | On |
@@ -46,6 +46,25 @@ the Google Fonts stylesheet.
 | Genre | Simulation (secondary: Strategy) |
 | Pricing | No payments, or donations |
 | Visibility | Draft until you have played the uploaded build, then Public |
+
+**Why 480 × 820.** `.frame` is capped at `max-width:600px`, so a wider embed
+only adds grey margins — the game never uses them. The sticky chrome (HUD,
+stat chips, tab row) measures 237px at 390px wide and 214px at 480px and
+above, because the chips and tabs stop wrapping. So 480 buys 23px of content
+height over a phone-width embed and wastes nothing. Measured at five sizes,
+no horizontal scroll at any of them.
+
+| Embed size | Frame width | Fixed chrome | Content visible |
+|---|---|---|---|
+| 360 × 640 | 360px | 237px | 403px |
+| 390 × 844 | 390px | 237px | 607px |
+| **480 × 820** | **480px** | **214px** | **606px** |
+| 600 × 800 | 600px | 214px | 586px |
+| 800 × 820 | 600px | 214px | 606px — 200px of it wasted margin |
+
+Below about 700px of embed height the game still works but scrolls for every
+read. The fullscreen button covers anyone who wants more, and on mobile itch
+sizes to the device once **Mobile friendly** is ticked.
 
 Tags: `medieval`, `historical`, `mercenary`, `management`, `turn-based`,
 `singleplayer`, `text-based`, `singleplayer`, `pwa`.
