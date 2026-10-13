@@ -216,6 +216,18 @@ input.name{width:100%;padding:11px 13px;border-radius:var(--r);border:1px solid 
   background:var(--panel);color:var(--text);font-size:15px;margin-bottom:12px}
 .step{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 
+/* Key for the battle diagram. The bars were unlabelled: three colours per
+   side and a thin one underneath, with nothing anywhere saying which was
+   which. */
+.bfnote{font-size:12px;color:var(--dim);line-height:1.45;margin:8px 0 0}
+.bfk-head{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 5px;
+  font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.bfk-head .n{font-family:var(--f-num);font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--text)}
+.bfk-units{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:12.5px;color:var(--muted)}
+.bfu{display:flex;align-items:center;gap:6px}
+.bfu i{width:12px;height:7px;border-radius:2px;flex:none}
+.bfu b{font-family:var(--f-num);color:var(--text);font-weight:500}
+
 .over{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:30px 20px;text-align:center}
 .over h1{font-size:26px;margin-bottom:12px}
 .over p{color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:18px}
@@ -980,6 +992,23 @@ function drawBattle(canvas, b, scale){
   bar(30, BDH-4, b.them.morale, b.them.morale <= 30 ? "#9C3A3A" : "#6FAE7C");
 }
 function battleCanvasHTML(id){ return `<canvas id="${id}" class="battlefield"></canvas>`; }
+
+/* What the diagram's bars mean. Lives beside drawBattle so the colours and
+   the labels come from the same place the strips are painted from. */
+function battleKeyHTML(b){
+  const side = (label, units, morale) => `
+    <div class="bfk-head"><span>${label}</span>
+      <span class="n">${fmt(strength(units))} men &middot; heart ${Math.round(morale)}</span></div>
+    <div class="bfk-units">${UNIT_IDS.map(k => `
+      <span class="bfu"><i style="background:${UNIT_COLOUR[k]}"></i>${UNITS[k].short} <b>${fmt(units[k])}</b></span>`).join("")}
+    </div>`;
+  return `${side("Your line, above the divide", b.us.units, b.us.morale)}
+    ${side("Theirs, below it", b.them.units, b.them.morale)}
+    <p class="bfnote">Each strip is one kind of man, and its length is how many &mdash; both sides
+    drawn to the same scale, so you can see who outnumbers whom at a glance. The thin bar under
+    each line is heart: when it empties, that side breaks and the fight is over however many men
+    are left standing.</p>`;
+}
 function paintBattle(){
   const cv = document.getElementById("bfield");
   if(cv && S.battle) drawBattle(cv, S.battle, 4);
@@ -2613,8 +2642,7 @@ function viewBattle(){
     <div class="bfwrap">${battleCanvasHTML("bfield")}</div>
     <div class="panel" style="margin-top:10px">
       <div class="kv"><span class="k">Round</span><span class="v">${Math.min(b.round,b.maxRounds)} of ${b.maxRounds}</span></div>
-      <div class="kv"><span class="k">Your strength &middot; heart</span><span class="v">${fmt(strength(b.us.units))} &middot; ${Math.round(b.us.morale)}</span></div>
-      <div class="kv"><span class="k">Theirs</span><span class="v">${fmt(strength(b.them.units))} &middot; ${Math.round(b.them.morale)}</span></div>
+      ${battleKeyHTML(b)}
     </div></section>`;
 
   if(b.log.length){

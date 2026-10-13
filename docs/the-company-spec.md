@@ -548,6 +548,25 @@ Worth noting what the measurement alone would have said. The charge *was*
 centred — on the grid. It took looking at the picture to see that the grid was
 not the thing it needed to be centred on.
 
+## The battle diagram had no key
+
+Three coloured strips a side and a thin bar underneath, and nothing anywhere
+in the game said what any of them were. The diagram had been there since
+Stage 2 and was never labelled, because whoever drew it knew what it meant.
+
+There is now a key under it: a swatch and a live count per unit type for both
+sides, each side's total and heart, and a line explaining that strip length is
+how many, that both sides are drawn to one scale, and that the thin bar is
+heart and emptying it ends the fight whatever is left standing. It replaced
+the strength/heart rows that sat under the diagram, so the screen gained an
+explanation without gaining height.
+
+`battleKeyHTML()` sits next to `drawBattle` and reads `UNIT_COLOUR` and
+`b.us.units` / `b.them.units` — the same constant the strips are painted from
+and the very objects `resolveRound` mutates. Asserted over 60 battles stopped
+at random rounds: every figure the key prints appears in the rendered DOM as
+the resolver's own number, 0 missing.
+
 ## Still not built
 
 No naval or river actions, no multi-company alliances, and the captain does
