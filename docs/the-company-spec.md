@@ -483,6 +483,47 @@ numbers.
 `tools/make-itch-zip.sh` builds the upload; `docs/itch-release.md` holds the
 settings, the page copy and the constraints worth stating on the page.
 
+## The press pass found three content bugs the balance runs could not
+
+Making a cover and store screenshots meant reading the game's own text closely
+for the first time since Stage 4 moved the career and the win condition. Three
+things were wrong, none of which any simulation would ever catch, because the
+simulation never reads the prose and never clicks a button label.
+
+- **The tutorial and the help sheet taught the wrong game.** "Four seasons to a
+  year, **ten** years to a career" when it is fifteen, and "bank **11,000**
+  florins and earn one faction's regard to **60**" when the gates are 52,000
+  and 76. A player following the tutorial would bank 11,000, see nothing
+  happen, and conclude the game was broken. The figures were hand-typed in
+  Stage 3 and went stale the moment Stage 4 re-measured the thresholds. They
+  now derive from CONFIG — `careerYears()` and `CONFIG.winTreasury` /
+  `winReputation` / `winEligibleFromSeason` — so prose and code cannot drift
+  again. The help sheet's "after the twentieth season" was wrong too; it is 30.
+- **A button that read `Back {lt}`.** Incident body text went through `fill()`
+  for token substitution; choice labels never did. Ten incidents, one affected
+  label, shipped.
+- **And that same button rewarded the wrong man.** `someLt()` picks afresh on
+  every call, so even once the label was filled it would have named a
+  different lieutenant than the text; worse, the effect acted on
+  `s.lieutenants[0]` regardless of who was named. Measured over 400 raised
+  feuds: **297 of 400** named a man who was not `lieutenants[0]`. Three times
+  in four, "Back Niccolo" raised somebody else's loyalty and cut the wrong
+  man's. Tokens are now resolved once per incident from one context, and the
+  feud acts through `namedLt()` / `otherLt()`.
+
+Asserted rather than spot-checked: all 10 incidents raised, 0 unsubstituted
+tokens in any body or label; 141 rendered screens across a full career, 0 raw
+tokens reaching the UI; 400 feuds, 0 label/effect mismatches.
+
+This is the project's own rule 9 — the number you show and the number you act
+on must come from the same code — applying to names and prose, not just
+numbers. Every instance here was a second source of truth for something the
+player reads.
+
+`tools/make-press.js` generates the cover and the store screenshots from the
+shipped build, driving the real functions, so the store art cannot drift from
+the game either.
+
 ## Still not built
 
 No naval or river actions, no multi-company alliances, and the captain does

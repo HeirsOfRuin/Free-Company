@@ -303,6 +303,16 @@ const DIFFICULTY = {
     pay:0.88, risk:1.20, coalition:1.35}
 };
 
+/* Career length as prose. Every sentence that tells the player how long a
+   career is, or what winning costs, derives from CONFIG through these — the
+   tutorial and the help sheet both carried hand-typed figures that went stale
+   the moment Stage 4 moved them, and told new players the career was ten
+   years and the prize 11,000 florins when it was fifteen and 52,000. */
+const careerYears = () => Math.round(CONFIG.totalSeasons / CONFIG.seasonsPerYear);
+const yearsWord = n => ["no","one","two","three","four","five","six","seven","eight","nine","ten",
+  "eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen",
+  "twenty"][n] || String(n);
+
 /* Unit types. Upkeep is per head per season; the default composition below
    comes out within ~1% of the scalar figure the economy was validated
    against (200 lances x (3 + 4*0.5) = 1,000), so the swap does not move the
@@ -725,8 +735,8 @@ const INCIDENTS = [
    title:"A feud among your officers",
    text:"{lt} and another of your lieutenants have not spoken in six weeks, and the men have taken sides.",
    choices:[
-     {t:"Back {lt}", fx:s => { const l=s.lieutenants[0]; if(l) l.loyalty=Math.min(100,l.loyalty+20);
-       const o=s.lieutenants[1]; if(o) o.loyalty=Math.max(0,o.loyalty-25);
+     {t:"Back {lt}", fx:s => { const l=namedLt(s); if(l) l.loyalty=Math.min(100,l.loyalty+20);
+       const o=otherLt(s); if(o) o.loyalty=Math.max(0,o.loyalty-25);
        return "You picked a side in front of everyone. One of them will not forget it, and neither will the other."; }},
      {t:"Break them both back to the ranks", fx:s => { s.loyalty=Math.max(0,s.loyalty-8); s.lieutenants.forEach(l=>l.loyalty=Math.max(0,l.loyalty-6));
        return "Harsh, even-handed, and resented by everyone equally. The feud stopped."; }},
@@ -1892,13 +1902,39 @@ function checkWin(){
   return FACTIONS.some(f => S.reputation[f.id] >= CONFIG.winReputation);
 }
 
+/* Tokens are resolved ONCE, here, for the body and every choice label from
+   one context. Two bugs lived in not doing that: choice labels were never
+   passed through fill() at all, so the feud offered a button reading
+   literally "Back {lt}"; and because someLt() picks afresh on each call,
+   filling them separately would have named one lieutenant in the text and a
+   different one on the button. */
 function maybeIncident(){
   if(Math.random() > 0.30) return null;
   const pool = INCIDENTS.filter(i => { try{ return i.when(S); }catch(e){ return false; } });
   if(!pool.length) return null;
   const bag = [];
   pool.forEach(i => { for(let k=0;k<(i.weight||1);k++) bag.push(i); });
-  return pick(bag);
+  const def = pick(bag);
+  const live = liveLts();
+  const man = live.length ? pick(live) : null;
+  const ctx = { lt: man ? ltName(man) : someLt(), town: pick(TOWNS) };
+  return Object.assign({}, def, {
+    ltName: man ? man.name : null,
+    text: fill(def.text, ctx),
+    choices: def.choices.map(c => Object.assign({}, c, { t: fill(c.t, ctx) }))
+  });
+}
+
+/* The man the incident actually named. A choice that says "Back Niccolo" has
+   to raise Niccolo, not whoever happens to sit first in the array — the name
+   shown and the man acted on must come from one place. */
+function namedLt(s){
+  const n = pendingIncident && pendingIncident.ltName;
+  return (n && s.lieutenants.find(l => l.name === n && l.alive)) || liveLts()[0] || s.lieutenants[0];
+}
+function otherLt(s){
+  const l = namedLt(s);
+  return s.lieutenants.find(o => o !== l && o.alive) || null;
 }
 
 function takeSnapshot(){
@@ -2313,7 +2349,7 @@ const TUTORIAL = [
    text:"Below the investments: choose two things for the company to be known for. They are permanent, and each advances by proving you fight that way.",
    done:s => s.doctrine.picked.length > 0},
   {id:"win", view:"field",
-   text:"To be taken off the road for good you need 11,000 florins AND one faction's regard at 60. Chasing the best rate every season is safer; committing to one employer is how you actually get there.",
+   text:`To be taken off the road for good you need ${fmt(CONFIG.winTreasury)} florins AND one faction's regard at ${CONFIG.winReputation}. Chasing the best rate every season is safer; committing to one employer is how you actually get there.`,
    done:s => s.stat.seasons >= 6}
 ];
 function tutorialStep(){
@@ -2335,9 +2371,9 @@ function hint(key, text){
 }
 const INTRO = [
   {h:"A free company", p:"Italy, 1360s. You are the captain of a few hundred men who fight for whoever pays. There is no state, no flag, and no pension — only the next contract."},
-  {h:"One season, one choice", p:"Four seasons to a year, ten years to a career. Each season you take a condotta, ride to a town and demand money not to burn it, or rest and let the company mend. Wages come due either way."},
+  {h:"One season, one choice", p:`Four seasons to a year, ${yearsWord(careerYears())} years to a career. Each season you take a condotta, ride to a town and demand money not to burn it, or rest and let the company mend. Wages come due either way.`},
   {h:"Two names, pulling apart", p:"Dread is what gets you hired at a good rate. Honor is what stops the cities agreeing to destroy you. Every raid buys the first and spends the second. That tension is the whole game."},
-  {h:"Getting off the road", p:"Bank 11,000 florins and earn one faction's regard to 60, and you are offered a permanent commission — the thing no free company keeps forever. Lose your men's loyalty, or your creditors, and there is no company left to offer it to."}
+  {h:"Getting off the road", p:`Bank ${fmt(CONFIG.winTreasury)} florins and earn one faction's regard to ${CONFIG.winReputation}, and you are offered a permanent commission — the thing no free company keeps forever. Lose your men's loyalty, or your creditors, and there is no company left to offer it to.`}
 ];
 function sheetIntro(){
   const i = S.tutorial.step || 0;
@@ -2753,7 +2789,7 @@ function sheetMenu(){
 }
 function sheetHelp(){
   return `<h3>How this works</h3>
-    <p class="lede">One season is one turn. Four seasons to a year, ten years to a career.</p>
+    <p class="lede">One season is one turn. Four seasons to a year, ${yearsWord(careerYears())} years to a career.</p>
     <div class="panel" style="margin-bottom:10px">
       <div class="kv"><span class="k">Take a condotta</span><span class="v">steady pay, a real fight</span></div>
       <div class="kv"><span class="k">Ride for composizione</span><span class="v">fast money, lasting enemies</span></div>
@@ -2762,7 +2798,7 @@ function sheetHelp(){
     <p class="lede"><b>Dread</b> gets you hired at better rates. <b>Honor</b> keeps the cities from
     leaguing against you. Raiding buys the first and spends the second — that tension is the game.</p>
     <p class="lede"><b>To win:</b> bank ${fmt(CONFIG.winTreasury)} florins <em>and</em> get one faction's
-    regard to ${CONFIG.winReputation}, after the twentieth season. Chasing the best rate every season is
+    regard to ${CONFIG.winReputation}, and not before season ${CONFIG.winEligibleFromSeason}. Chasing the best rate every season is
     safer; committing to one employer is how you actually get taken off the road.</p>
     <p class="lede"><b>To lose:</b> loyalty reaching nothing, or two unpaid seasons with trust already
     thin — the company splits. Or dread high and honor low for long enough that your enemies stop
@@ -2818,12 +2854,14 @@ function sheetKit(slot){
 function sheetIncident(){
   const inc = pendingIncident;
   if(!inc) return `<h3>Nothing pressing</h3><div class="btnrow"><button class="btn" data-a="scrim">Close</button></div>`;
-  return `<h3>${inc.title}</h3>
-    <p class="lede">${esc(fill(inc.text))}</p>
+  /* Already filled when the incident was raised — fill it twice and the man
+     named on the button stops matching the man named in the text. */
+  return `<h3>${esc(inc.title)}</h3>
+    <p class="lede">${esc(inc.text)}</p>
     <div class="btnrow" style="flex-direction:column">
       ${inc.choices.map((c,i) => {
         const cant = c.cost && S.treasury < c.cost;
-        return `<button class="btn ghost" data-a="incident" data-v="${i}"${cant?" disabled":""}>${c.t}${cant?" — not enough":""}</button>`;
+        return `<button class="btn ghost" data-a="incident" data-v="${i}"${cant?" disabled":""}>${esc(c.t)}${cant?" — not enough":""}</button>`;
       }).join("")}</div>`;
 }
 function toast(text){

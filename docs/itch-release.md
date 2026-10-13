@@ -154,6 +154,28 @@ as a web app — add it to a phone home screen and it plays with the network
 off. Saves there and saves here are separate; Export in the menu copies a
 company out as text if you want to move one.
 
+### Images
+
+`press/` holds the cover and six screenshots, all generated from the shipped
+build by `node tools/make-press.js` — the screenshots are the real game driven
+through its own functions, and the cover's device comes out of the same
+`drawBanner()` the game uses, so the store art cannot drift from the game.
+
+- `cover.png` — 630×500, itch's size. Check it at 315×250 before using it;
+  that is how it appears in browse listings.
+- `shot-1-the-season.png` — the season digest, a campaign commitment, and the
+  cost of breaking a contract. **The strongest single image.**
+- `shot-2-the-field.png` — a battle in a defile: ground, the enemy, the round,
+  and orders annotated good or bad for that ground.
+- `shot-3-the-men.png` — named lieutenants and the shape of the company.
+- `shot-4-a-siege.png` — five ways to take a town, with prices.
+- `shot-5-the-captain.png` — attributes, kit, investments, arms.
+- `shot-6-an-incident.png` — a choice with named men and no good answer.
+
+**Pick three:** 1, 2 and 4. The season, the field, and the siege — loop,
+tactics, and consequence, without two screens that look alike. Use 3 and 6 as
+the fourth and fifth if you want them.
+
 ### Optional "what's in it" block
 
 - 60 seasons, 1361 to 1375 — one career, four ways to end it
@@ -215,6 +237,11 @@ which pays better and is kinder on the field.
 - [x] Zip verified by running the game out of it
 - [ ] **Play the uploaded build yourself, start to finish of at least a few
       seasons.** Stage 4 has never been played by a person.
-- [ ] Cover image (630×500) and two or three screenshots
+- [x] Cover image (630×500) and screenshots — `press/`, built by
+      `node tools/make-press.js`
+- [x] Tutorial and help sheet corrected: they taught a ten-year career and an
+      11,000 florin win condition, both wrong since Stage 4
+- [x] Incident choice labels substitute their tokens, and the feud rewards the
+      lieutenant it names (it backed the wrong man 297 times in 400)
 - [ ] Decide: self-host the fonts, or accept the fallback
 - [ ] Decide: keep the title "The Company", or distinguish it
