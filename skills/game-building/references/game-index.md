@@ -6,7 +6,7 @@ infrastructure problems in a new game have already been solved in one of these.
 | Game | Repo | Shape | Genre / loop | Status (Oct 2026) |
 |---|---|---|---|---|
 | Silk Road | `SilkRoad` | A: one HTML file | Merchant caravans, 1247, three starts | Shipped to itch; post-mortem `docs/building-games.md` |
-| Cradle | `Civ-City` | A | Single-city civ builder | Code is on branch `claude/game-development-wmhsp6` (open PR #1); `main` holds only a README |
+| Cradle | `Civ-City` | A | Single-city civ builder, Bronze Age to 1900 | Built; merged to `main` 2026-10-16 (PR #1) |
 | Touchline | `Football` | B: ES modules, no build | Football manager, five-tier pyramid | 1,606 assertions; PWA |
 | Centennial Farm | `Farmyard-` | B + bundler | Manitoba farm 1875-2000, generational | Pages PWA; most rigorous balance tooling |
 | The Company | `Free-Company` | A | Free company, Italy 1361-75 | Shipped to itch; home of `docs/game-backlog.md` and this skill |

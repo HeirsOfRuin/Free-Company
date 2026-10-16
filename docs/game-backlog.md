@@ -6,15 +6,24 @@ State of the game projects, and a filtered list of candidates for the next build
 
 ## 1. What exists
 
-| Project | Repo | Status |
-|---|---|---|
-| **Silk Road** — turn-based merchant game, Samarkand/Trebizond/Tabriz, 1247 | `HeirsOfRuin/SilkRoad` | Built, playable, PWA-installable. Post-mortem written (`docs/building-games.md`). |
-| **Cradle** — city/civ builder | `HeirsOfRuin/Civ-City` | Built, in review. Last note: trade mechanic flagged as a balance trap. |
-| **Touchline** — football manager sim | `HeirsOfRuin/Football` | Built, 1,589 tests passing. |
-| **Age of Chivalry** — TTRPG, AI GM roadmap, canon audit vs. draft9 | none in this workspace | Design/canon work, ran on the local bridge environment. No game app repo here. |
+Updated 2026-10-16. Eight game repos, all under `HeirsOfRuin/`.
 
-Three built games, all the same shape: single HTML file, no build step, no server,
-no API key, turn-based, historically grounded, phone-installable.
+| Project | Repo | Shape | Status |
+|---|---|---|---|
+| **Silk Road** — merchant caravans, Samarkand/Trebizond/Tabriz, 1247 | `SilkRoad` | Single HTML file | Built, PWA on Pages, itch zip and offline download. Post-mortem in `docs/building-games.md`. |
+| **Cradle** — single-city civ builder, Bronze Age to 1900 | `Civ-City` | Single HTML file | Built; merged to `main` 2026-10-16 (PR #1). Last note: trade flagged as a balance trap. |
+| **Touchline** — football manager, five-tier pyramid | `Football` | ES modules, no build | Built through Stage 7, 1,606 assertions, PWA. Last work 2026-09-18 (playtest fixes). |
+| **Centennial Farm** — Manitoba farm 1875–2000, generational | `Farmyard-` | ES modules + bundler | Built, PWA on Pages. Last work 2026-09-25 (playtest fixes from a 1916 save). |
+| **The Company** — free company, Italy 1361–75 | `Free-Company` | Single HTML file | Built through Stage 4, released to itch (`docs/itch-release.md`). One open item: a full human playthrough of Stage 4. |
+| **Knight of Adalia** — narrative RPG, five chapters, a knight's life | `Knight-of-Adalia-` | Vite + Preact + TS + YAML | Complete prologue to endings. On itch (free), Android APK, Chapter One demo. Last work 2026-10-14. |
+| **The Lists** — tourney knight's career, kingdom of Lothmere | `The-Lists` | ES modules + bundler | Built through Phase 9b, PWA, itch kit. Last work 2026-10-10. |
+| **Vikingr** — Viking life RPG, 830 onward, sea map, three combat layers | `Vikingr` | Vite + Preact + TS + YAML | In development: years 830–835 written, Roadmap 2 underway, combat revision 2 awaiting the author's verdict. Last work 2026-10-15. |
+| **Age of Chivalry** — TTRPG, AI GM roadmap, canon audit vs. draft9 | none in this workspace | — | Design/canon work on the local bridge environment. No game app repo. |
+
+All eight game apps share the same constraints: no server, no API key, turn-based,
+historically grounded, phone-installable. They use three technical shapes; see the
+`game-building` skill (`skills/game-building/references/architecture.md`) for which
+to pick. That skill is the cross-project record of what these builds taught.
 
 ## 2. Ideas discussed but never started
 
@@ -28,10 +37,10 @@ process.
 
 ## 3. The design filter
 
-Anything on the candidate list has to clear the constraints the three existing
-builds actually ran under:
+Anything on the candidate list has to clear the constraints the existing builds
+actually ran under:
 
-- One HTML file, openable from disk, playable offline on a phone.
+- Playable offline on a phone and installable (a single file, or a static build).
 - Turn-based. No real-time input, no multiplayer, no server, no API key.
 - Content one person can author — art and text are the real budget, not code.
 - A loop that generates stories, not just numbers.
@@ -58,6 +67,20 @@ it feed work, consulting or the TTRPG. **Fun risk** = risk of being boring
 | 6 | GM Table | 5 | 3 | 3 | 5 | n/a | **16** |
 | 7 | The Siege | 3 | 4 | 3 | 3 | 3 | **16** |
 | 8 | The Company | 2 | 5 | 3 | 2 | 4 | **16** |
+
+**Status since this was scored (2026-10-16).** The scores above were set against
+three built games; there are now eight, so Distance needs re-scoring before the
+next pick.
+- **The Company** — built anyway, and released. The kill gate showed it was not
+  "Touchline with violence": its scarce resource is the gap between being feared
+  and being trusted.
+- **Homestead** — effectively built as Centennial Farm (Manitoba 1875–2000).
+- **The Manor Year** — now overlaps Centennial Farm (generational land and
+  succession) and Knight of Adalia (manor estate); its Distance drops.
+- **The Siege** — sieges exist in The Company and Knight of Adalia; Distance drops.
+- **The Workshop, Shift, The Assize, GM Table** — not started. The Workshop is
+  still the only candidate whose scarce resource (capacity and skill, not money)
+  none of the eight games uses.
 
 ### 1. The Workshop
 An armourer's shop, Nuremberg or Milan, 1470s. You take commissions, assign
@@ -153,7 +176,7 @@ inside the proven architecture, and sitting directly on top of domain knowledge
 you already have. And it de-risks the commercially valuable build by proving the
 loop somewhere the stakes are zero.
 
-Do not build The Company. Do not build a fourth trade game.
+Do not build The Company. Do not build a fourth trade game. *(The Company was built later regardless; see the status note in section 4.)*
 
 ## 6. Next actions
 
@@ -163,9 +186,10 @@ Do not build The Company. Do not build a fourth trade game.
 3. **Prototype the loop as numbers only** — no UI, no art. Twenty turns in a
    script. If the decisions aren't interesting as a table of numbers, no amount
    of pixel art fixes it. This is the kill gate.
-4. **Only then** carry over the Silk Road scaffolding: single file, save slots,
-   manifest, service worker, test harness.
-5. **Re-read `SilkRoad/docs/building-games.md` at the first scope expansion,**
-   not at the start. Its top failure mode — assumptions outliving the scope that
-   justified them — hits the moment a second shop, second city or second mode
+4. **Only then** scaffold, using the skill's day-one checklist and copy map
+   (`references/game-index.md`) rather than one game's files.
+5. **Follow the `game-building` skill** (`skills/game-building/SKILL.md`): its workflow
+   starts at this spec and kill gate. **Re-read its scope-widening check at the first expansion,**
+   not at the start. That failure mode (F10, assumptions outliving the scope that
+   justified them) hits the moment a second shop, second city or second mode
    appears.

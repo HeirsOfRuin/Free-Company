@@ -320,7 +320,7 @@ Buttons queue an intent; the engine later decides; nothing reports the outcome.
 
 ### F38. Agent-process failures
 - Ideas discussed in chat and never written into a repo are gone next session
-  (game-backlog.md). KA committed two scratch scripts by mistake. Cradle's build
-  lives on an unmerged branch; the default branch of Civ-City is a one-line README.
+  (game-backlog.md). KA committed two scratch scripts by mistake. Cradle's build sat
+  on an unmerged branch for five weeks while `main` of Civ-City was a one-line README.
 - **Fix:** write ideas to `docs/game-backlog.md` immediately; `.gitignore` scratch
   patterns (`*.tmp.ts`); record in the backlog which branch holds a build.
