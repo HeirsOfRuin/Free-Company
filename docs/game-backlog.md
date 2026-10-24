@@ -11,6 +11,7 @@ State of the game projects, and a filtered list of candidates for the next build
 | **Silk Road** — turn-based merchant game, Samarkand/Trebizond/Tabriz, 1247 | `HeirsOfRuin/SilkRoad` | Built, playable, PWA-installable. Post-mortem written (`docs/building-games.md`). |
 | **Cradle** — city/civ builder | `HeirsOfRuin/Civ-City` | Built, in review. Last note: trade mechanic flagged as a balance trap. |
 | **Touchline** — football manager sim | `HeirsOfRuin/Football` | Built, 1,589 tests passing. |
+| **Imperator** — legate turned claimant, Roman civil wars AD 68–71; buy, negotiate, fight or bypass every garrison, hold Rome 18 months to win | `HeirsOfRuin/Imperator-of-Rome` | Stage 1 spec written (`docs/SPEC.md`), branch `ccr-8f8fa91f-0iglvu`. Next: kill-gate sim. |
 | **Age of Chivalry** — TTRPG, AI GM roadmap, canon audit vs. draft9 | none in this workspace | Design/canon work, ran on the local bridge environment. No game app repo here. |
 
 Three built games, all the same shape: single HTML file, no build step, no server,
