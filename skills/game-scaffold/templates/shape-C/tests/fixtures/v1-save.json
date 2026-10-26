@@ -1,9 +1,0 @@
-{
-  "v": 1,
-  "seed": 12345,
-  "scene": "yard",
-  "turn": 2,
-  "journal": [{ "turn": 1, "scene": "start", "choice": "knock" }],
-  "over": false,
-  "ending": null
-}

@@ -1,9 +1,0 @@
-node_modules/
-dist/
-release/
-out/
-# scratch scripts: name them tools/_*.mjs or *.tmp.* and they never get committed
-# (Vikingr committed tools/_food.mts, _seen.mts and _sweep.mts; Knight of Adalia two more)
-tools/_*
-*.tmp.*
-.DS_Store
