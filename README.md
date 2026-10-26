@@ -15,7 +15,7 @@ a computer, installs as an app, and plays offline.
 - **On itch.io:** the same game in the browser (`docs/itch-release.md` has the page and settings).
 - **From a checkout:** open `index.html`, or serve the folder (`python3 -m http.server`).
 
-Saves live in the browser. The menu's save code moves a game between devices.
+Saves live in the browser. "Copy company as text" and "Paste a company in" move a game between devices.
 
 ## Layout
 
