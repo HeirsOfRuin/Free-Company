@@ -9,18 +9,14 @@
 const path = require("path");
 const fs = require("fs");
 
-const CHROME = process.env.CHROME_PATH
-  || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-const PW = process.env.PLAYWRIGHT_PATH
-  || "/opt/node22/lib/node_modules/playwright";
-const { chromium } = require(PW);
+const { chromium, launchOptions } = require("./playwright");
 
 const SEED = "hawkwood";   // the company's own arms, used as the app mark
 
 (async () => {
   const out = path.resolve(__dirname, "..", "icons");
   fs.mkdirSync(out, { recursive: true });
-  const browser = await chromium.launch({ executablePath: CHROME });
+  const browser = await chromium.launch(launchOptions());
   const page = await browser.newPage();
   await page.route("**/*", r => r.request().url().startsWith("file://") ? r.continue() : r.abort());
   await page.goto("file://" + path.resolve(__dirname, "..", "index.html"),

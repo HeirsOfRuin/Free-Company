@@ -12,7 +12,7 @@
    Writes press/cover.png (630x500, itch's size) and press/shot-*.png
    (480x820 at 2x, the dimensions of the itch embed).
 */
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium, launchOptions } = require('./playwright');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -82,7 +82,7 @@ async function start(page, port){
   fs.mkdirSync(OUT, { recursive:true });
   const port = 8231;
   const srv = await serve(port);
-  const br = await chromium.launch({ args:['--no-sandbox'] });
+  const br = await chromium.launch(launchOptions({ args:['--no-sandbox'] }));
   const shot = async (page, name) => {
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, name) });

@@ -4,14 +4,14 @@
    enemy scaled to hold that number.
    Run: node tools/measure-battles.js
 */
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium, launchOptions, GAME } = require('./playwright');
 const path = require('path');
 (async () => {
-  const br = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const br = await chromium.launch(launchOptions());
   const page = await br.newPage();
   await page.route('**/*', r => r.request().url().startsWith('file://') ? r.continue() : r.abort());
   const errs=[]; page.on('pageerror', e=>errs.push(e.message));
-  await page.goto('file://'+path.resolve('/home/user/New/index.html'), {waitUntil:'domcontentloaded'});
+  await page.goto(GAME, {waitUntil:'domcontentloaded'});
   await page.waitForTimeout(200);
   const res = await page.evaluate(() => {
     newGame('C', BUILDS[0], Object.fromEntries(ATTRS.map(a=>[a.id,2])), 'x','captain');

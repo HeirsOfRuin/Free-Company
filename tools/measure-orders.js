@@ -4,14 +4,14 @@
    order wins everywhere, the counterplay triangle has failed.
    Run: node tools/measure-orders.js
 */
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium, launchOptions, GAME } = require('./playwright');
 const path = require('path');
 (async () => {
-  const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const browser = await chromium.launch(launchOptions());
   const page = await browser.newPage();
   await page.route('**/*', r => r.request().url().startsWith('file://') ? r.continue() : r.abort());
   const errs=[]; page.on('pageerror', e=>errs.push(e.message));
-  await page.goto('file://'+path.resolve('/home/user/New/index.html'), {waitUntil:'domcontentloaded'});
+  await page.goto(GAME, {waitUntil:'domcontentloaded'});
   await page.waitForTimeout(200);
 
   const res = await page.evaluate(() => {
