@@ -6,7 +6,7 @@ State of the game projects, and a filtered list of candidates for the next build
 
 ## 1. What exists
 
-Updated 2026-10-16. Eight game repos, all under `HeirsOfRuin/`.
+Updated 2026-10-26. Nine game repos, all under `HeirsOfRuin/`.
 
 | Project | Repo | Shape | Status |
 |---|---|---|---|
@@ -18,9 +18,10 @@ Updated 2026-10-16. Eight game repos, all under `HeirsOfRuin/`.
 | **Knight of Adalia** — narrative RPG, five chapters, a knight's life | `Knight-of-Adalia-` | Vite + Preact + TS + YAML | Complete prologue to endings. On itch (free), Android APK, Chapter One demo. Last work 2026-10-14. |
 | **The Lists** — tourney knight's career, kingdom of Lothmere | `The-Lists` | ES modules + bundler | Built through Phase 9b, PWA, itch kit. Last work 2026-10-10. |
 | **Vikingr** — Viking life RPG, 830 onward, sea map, three combat layers | `Vikingr` | Vite + Preact + TS + YAML | In development: years 830–835 written, Roadmap 2 underway, combat revision 2 awaiting the author's verdict. Last work 2026-10-15. |
+| **Imperator** — legate turned claimant, Roman civil wars AD 68–71; hold Rome to win | `Imperator-of-Rome` | ES modules (shape B), no build yet | Phase 2 plus first playtest and the Depth pass (Senate, frontier peoples, trade, rival diplomacy). Built with the game-building skill. Branch `ccr-8f8fa91f-0iglvu`; no Pages deploy yet. Last work 2026-10-26. |
 | **Age of Chivalry** — TTRPG, AI GM roadmap, canon audit vs. draft9 | none in this workspace | — | Design/canon work on the local bridge environment. No game app repo. |
 
-All eight game apps share the same constraints: no server, no API key, turn-based,
+All nine game apps share the same constraints: no server, no API key, turn-based,
 historically grounded, phone-installable. They use three technical shapes; see the
 `game-building` skill (`skills/game-building/references/architecture.md`) for which
 to pick. That skill is the cross-project record of what these builds taught.
@@ -69,7 +70,7 @@ it feed work, consulting or the TTRPG. **Fun risk** = risk of being boring
 | 8 | The Company | 2 | 5 | 3 | 2 | 4 | **16** |
 
 **Status since this was scored (2026-10-16).** The scores above were set against
-three built games; there are now eight, so Distance needs re-scoring before the
+three built games; there are now nine, so Distance needs re-scoring before the
 next pick.
 - **The Company** — built anyway, and released. The kill gate showed it was not
   "Touchline with violence": its scarce resource is the gap between being feared
